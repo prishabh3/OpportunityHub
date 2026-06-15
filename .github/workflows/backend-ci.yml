@@ -1,0 +1,79 @@
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - "infra/init-db/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "infra/init-db/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: opportunityhub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/opportunityhub
+      REDIS_URL: redis://localhost:6379/0
+      SUPABASE_URL: https://placeholder.supabase.co
+      SUPABASE_JWT_AUDIENCE: authenticated
+      CORS_ORIGINS: '["http://localhost:3000"]'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Apply local auth schema stub
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d opportunityhub -f ../infra/init-db/01-auth-schema.sql
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Type check (mypy)
+        run: mypy app
+
+      - name: Run migrations
+        run: alembic upgrade head
+
+      - name: Test
+        run: pytest -q
