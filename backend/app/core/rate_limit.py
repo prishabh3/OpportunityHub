@@ -41,14 +41,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         key = f"ratelimit:{identity}:{int(time.time()) // WINDOW_SECONDS}"
 
         try:
-            async with self._redis.pipeline(transaction=True) as pipe:
-                pipe.incr(key)
-                pipe.expire(key, WINDOW_SECONDS, nx=True)
-                current, _ = await pipe.execute()
-        except RedisError:
+            current = await self._redis.incr(key)
+            if current == 1:
+                # Set the window TTL only when the key is first created. Plain
+                # EXPIRE (no NX flag) for the widest Redis/Upstash compatibility.
+                await self._redis.expire(key, WINDOW_SECONDS)
+        except RedisError as exc:
             # Fail open: a Redis outage must not take the whole API down. We log
-            # and let the request through rather than 500-ing every caller.
-            logger.warning("rate_limit_redis_unavailable", path=request.url.path)
+            # the actual error and let the request through.
+            logger.warning(
+                "rate_limit_redis_unavailable", path=request.url.path, error=repr(exc)
+            )
             return await call_next(request)
 
         remaining = max(limit - current, 0)
