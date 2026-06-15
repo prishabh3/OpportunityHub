@@ -1,7 +1,9 @@
+import json
 from functools import lru_cache
+from typing import Annotated
 
-from pydantic import AnyHttpUrl, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AnyHttpUrl, Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -14,8 +16,27 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False)
     api_v1_prefix: str = Field(default="/api/v1")
 
-    # CORS
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    # CORS — accepts a JSON array (["https://a.com"]), a comma-separated list,
+    # or a single origin. `NoDecode` disables pydantic-settings' automatic JSON
+    # parsing so the validator below can handle all of these forms.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:3000"]
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _parse_cors_origins(cls, value: object) -> list[str]:
+        if value is None or value == "":
+            return ["http://localhost:3000"]
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            text = value.strip()
+            if text.startswith("["):
+                parsed = json.loads(text)
+                return [str(origin) for origin in parsed]
+            return [origin.strip() for origin in text.split(",") if origin.strip()]
+        return value  # type: ignore[return-value]
 
     # Database
     database_url: str = Field(
