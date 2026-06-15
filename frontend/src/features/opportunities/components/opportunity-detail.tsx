@@ -49,7 +49,12 @@ export function OpportunityDetail({ id }: { id: string }) {
               ? error.message
               : "Please try again."}
         </p>
-        <Button variant="outline" className="mt-6" render={<Link href="/opportunities" />}>
+        <Button
+          variant="outline"
+          className="mt-6"
+          nativeButton={false}
+          render={<Link href="/opportunities" />}
+        >
           Back to opportunities
         </Button>
       </div>
@@ -109,7 +114,11 @@ export function OpportunityDetail({ id }: { id: string }) {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Button size="lg" render={<a href={data.apply_url} target="_blank" rel="noopener noreferrer" />}>
+        <Button
+          size="lg"
+          nativeButton={false}
+          render={<a href={data.apply_url} target="_blank" rel="noopener noreferrer" />}
+        >
           Apply now
           <ArrowUpRight className="size-4" />
         </Button>

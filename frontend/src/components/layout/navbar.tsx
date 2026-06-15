@@ -7,8 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const links = [
   { href: "/opportunities", label: "Opportunities" },
-  { href: "/search", label: "Search" },
-  { href: "#features", label: "Features" },
+  { href: "/#features", label: "Features" },
 ];
 
 export async function Navbar() {

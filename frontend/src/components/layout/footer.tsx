@@ -9,8 +9,8 @@ export function Footer() {
           <Link href="/opportunities" className="hover:text-foreground">
             Opportunities
           </Link>
-          <Link href="/search" className="hover:text-foreground">
-            Search
+          <Link href="/#features" className="hover:text-foreground">
+            Features
           </Link>
           <Link href="/sign-in" className="hover:text-foreground">
             Sign in
