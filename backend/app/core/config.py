@@ -43,6 +43,17 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/opportunityhub"
     )
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _ensure_asyncpg_driver(cls, value: object) -> object:
+        """Force the async driver so a plain ``postgresql://`` URL (as copied
+        from Supabase/most providers) doesn't fall back to psycopg2."""
+        if isinstance(value, str):
+            for prefix in ("postgresql://", "postgres://"):
+                if value.startswith(prefix):
+                    return "postgresql+asyncpg://" + value[len(prefix) :]
+        return value
+
     # Redis
     redis_url: str = Field(default="redis://localhost:6379/0")
 
