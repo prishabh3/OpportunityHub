@@ -1,6 +1,7 @@
 import json
 from functools import lru_cache
 from typing import Annotated
+from urllib.parse import quote
 
 from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -45,14 +46,36 @@ class Settings(BaseSettings):
 
     @field_validator("database_url", mode="before")
     @classmethod
-    def _ensure_asyncpg_driver(cls, value: object) -> object:
-        """Force the async driver so a plain ``postgresql://`` URL (as copied
-        from Supabase/most providers) doesn't fall back to psycopg2."""
-        if isinstance(value, str):
-            for prefix in ("postgresql://", "postgres://"):
-                if value.startswith(prefix):
-                    return "postgresql+asyncpg://" + value[len(prefix) :]
-        return value
+    def _normalize_database_url(cls, value: object) -> object:
+        """Make a pasted Postgres URL robust:
+        1. force the async driver (``postgresql+asyncpg://``) so it doesn't fall
+           back to psycopg2;
+        2. URL-encode the user/password so special characters in the password
+           (``@ : / # ...``) don't corrupt host parsing.
+        """
+        if not isinstance(value, str):
+            return value
+
+        url = value.strip()
+        for prefix in ("postgresql://", "postgres://"):
+            if url.startswith(prefix):
+                url = "postgresql+asyncpg://" + url[len(prefix) :]
+                break
+
+        scheme = "postgresql+asyncpg://"
+        if not url.startswith(scheme):
+            return url
+
+        rest = url[len(scheme) :]
+        if "@" in rest:
+            userinfo, _, hostpart = rest.rpartition("@")  # host has no '@'
+            if userinfo:
+                user, sep, password = userinfo.partition(":")  # user has no ':'
+                encoded = quote(user, safe="")
+                if sep:
+                    encoded += ":" + quote(password, safe="")
+                rest = f"{encoded}@{hostpart}"
+        return scheme + rest
 
     # Redis
     redis_url: str = Field(default="redis://localhost:6379/0")
