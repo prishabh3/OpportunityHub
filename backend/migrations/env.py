@@ -4,7 +4,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import get_settings
 from app.infrastructure.db.session import Base
@@ -18,8 +18,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Override sqlalchemy.url with the application's configured database URL.
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# The database URL comes straight from app settings rather than the .ini file.
+# We deliberately do NOT push it through alembic's configparser, whose '%'
+# interpolation would choke on percent-encoded passwords.
+DATABASE_URL = get_settings().database_url
 
 # add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata
@@ -42,9 +44,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -67,11 +68,7 @@ async def run_async_migrations() -> None:
 
     """
 
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = create_async_engine(DATABASE_URL, poolclass=pool.NullPool)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
