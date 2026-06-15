@@ -1,0 +1,73 @@
+from datetime import datetime
+
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
+
+from app.application.dtos.opportunity import OpportunityFilters
+from app.infrastructure.db.models.opportunity import Opportunity, Tag
+
+
+class OpportunityRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    @staticmethod
+    def _apply_filters(
+        stmt: "Select[tuple[Opportunity]]", f: OpportunityFilters
+    ) -> "Select[tuple[Opportunity]]":
+        if f.type:
+            stmt = stmt.where(Opportunity.type == f.type)
+        if f.status:
+            stmt = stmt.where(Opportunity.status == f.status)
+        if f.country:
+            stmt = stmt.where(func.lower(Opportunity.country) == f.country.lower())
+        if f.remote_type:
+            stmt = stmt.where(Opportunity.remote_type == f.remote_type)
+        if f.difficulty:
+            stmt = stmt.where(Opportunity.difficulty == f.difficulty)
+        if f.q:
+            like = f"%{f.q}%"
+            stmt = stmt.where(
+                or_(
+                    Opportunity.title.ilike(like),
+                    Opportunity.organizer.ilike(like),
+                    Opportunity.description.ilike(like),
+                )
+            )
+        if f.tag:
+            stmt = stmt.where(Opportunity.tags.any(Tag.name == f.tag))
+        return stmt
+
+    async def list(
+        self,
+        filters: OpportunityFilters,
+        limit: int,
+        cursor: tuple[datetime, str] | None,
+    ) -> tuple[list[Opportunity], bool]:
+        """Keyset pagination ordered by (created_at, id) descending. Fetches one
+        extra row to determine whether more pages exist."""
+        stmt = self._apply_filters(select(Opportunity), filters)
+        if cursor is not None:
+            created_at, item_id = cursor
+            # Keyset predicate: everything strictly "after" the cursor row in
+            # (created_at desc, id desc) order. Comparing against the typed
+            # columns coerces the bind params to timestamptz / uuid correctly.
+            stmt = stmt.where(
+                or_(
+                    Opportunity.created_at < created_at,
+                    and_(
+                        Opportunity.created_at == created_at,
+                        Opportunity.id < item_id,
+                    ),
+                )
+            )
+        stmt = stmt.order_by(Opportunity.created_at.desc(), Opportunity.id.desc()).limit(limit + 1)
+
+        result = await self._session.execute(stmt)
+        rows = list(result.scalars().unique().all())
+        has_more = len(rows) > limit
+        return rows[:limit], has_more
+
+    async def get(self, opportunity_id: str) -> Opportunity | None:
+        return await self._session.get(Opportunity, opportunity_id)
