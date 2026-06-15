@@ -1,6 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
 
 import { UserMenu } from "@/features/auth/components/user-menu";
 import { createClient } from "@/lib/supabase/server";
@@ -20,9 +20,7 @@ export async function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sparkles className="size-4" />
-          </span>
+          <Image src="/logo.png" alt="OpportunityHub" width={28} height={28} priority />
           OpportunityHub
         </Link>
 
