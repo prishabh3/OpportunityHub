@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut, User } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -50,6 +50,10 @@ export function UserMenu({ email }: { email: string }) {
         <DropdownMenuItem onClick={() => router.push("/dashboard")}>
           <LayoutDashboard className="size-4" />
           Dashboard
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/profile")}>
+          <User className="size-4" />
+          Profile
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={signOut}>

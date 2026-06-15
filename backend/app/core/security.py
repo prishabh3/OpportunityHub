@@ -64,9 +64,11 @@ def extract_bearer_token(authorization: str) -> str:
 
 
 async def get_current_user(
-    authorization: Annotated[str, Header()],
     verifier: Annotated[SupabaseJWTVerifier, Depends(get_jwt_verifier)],
+    authorization: Annotated[str | None, Header()] = None,
 ) -> AuthenticatedUser:
+    if not authorization:
+        raise UnauthorizedError("Authentication required")
     token = extract_bearer_token(authorization)
     return verifier.verify(token)
 
