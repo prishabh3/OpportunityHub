@@ -1,0 +1,27 @@
+# Render Blueprint for the OpportunityHub backend (Docker web service).
+# Create via Render → New → Blueprint, pointing at this repo.
+# Secrets (DATABASE_URL, REDIS_URL, CORS_ORIGINS) are set in the dashboard.
+services:
+  - type: web
+    name: opportunityhub-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: singapore
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SUPABASE_URL
+        value: https://ivhwuoeukukieuwvsszq.supabase.co
+      - key: SUPABASE_JWT_AUDIENCE
+        value: authenticated
+      - key: SEED_ON_START
+        value: "true"
+      - key: DATABASE_URL
+        sync: false # Supabase Session Pooler URL (postgresql+asyncpg://...)
+      - key: REDIS_URL
+        sync: false # Upstash rediss:// URL
+      - key: CORS_ORIGINS
+        sync: false # JSON array incl. the Vercel domain

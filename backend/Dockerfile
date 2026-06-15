@@ -10,9 +10,11 @@ COPY pyproject.toml ./
 COPY app ./app
 COPY migrations ./migrations
 COPY alembic.ini ./
+COPY scripts ./scripts
 
-RUN pip install .
+RUN pip install . && chmod +x scripts/start.sh
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Honors $PORT (set by the host), runs migrations, then serves.
+CMD ["./scripts/start.sh"]

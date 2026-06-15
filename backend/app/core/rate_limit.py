@@ -1,13 +1,17 @@
 import time
 
 from fastapi import Request, Response
+from redis import RedisError
 from redis.asyncio import Redis
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
 
 from app.core.config import Settings
 from app.core.exceptions import RateLimitedError, problem_response
+from app.core.logging import get_logger
 from app.core.security import extract_bearer_token, get_jwt_verifier
+
+logger = get_logger(__name__)
 
 WINDOW_SECONDS = 60
 
@@ -36,10 +40,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         identity, limit = await self._identify(request)
         key = f"ratelimit:{identity}:{int(time.time()) // WINDOW_SECONDS}"
 
-        async with self._redis.pipeline(transaction=True) as pipe:
-            pipe.incr(key)
-            pipe.expire(key, WINDOW_SECONDS, nx=True)
-            current, _ = await pipe.execute()
+        try:
+            async with self._redis.pipeline(transaction=True) as pipe:
+                pipe.incr(key)
+                pipe.expire(key, WINDOW_SECONDS, nx=True)
+                current, _ = await pipe.execute()
+        except RedisError:
+            # Fail open: a Redis outage must not take the whole API down. We log
+            # and let the request through rather than 500-ing every caller.
+            logger.warning("rate_limit_redis_unavailable", path=request.url.path)
+            return await call_next(request)
 
         remaining = max(limit - current, 0)
         reset = WINDOW_SECONDS - (int(time.time()) % WINDOW_SECONDS)
