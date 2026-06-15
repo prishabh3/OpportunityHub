@@ -11,7 +11,7 @@ export default async function SignUpPage({
   searchParams: Promise<{ redirect?: string }>;
 }) {
   const { redirect } = await searchParams;
-  const redirectTo = redirect && redirect.startsWith("/") ? redirect : "/dashboard";
+  const redirectTo = redirect && redirect.startsWith("/") ? redirect : "/";
 
   return (
     <div className="flex flex-col gap-6">
