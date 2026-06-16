@@ -2,13 +2,14 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TagInput } from "@/components/ui/tag-input";
 import { ApiError } from "@/lib/api-client";
 import {
   getProfile,
@@ -17,6 +18,11 @@ import {
   type ProfileUpdate,
   type RemoteType,
 } from "@/features/profile/api";
+import {
+  COMPANY_SUGGESTIONS,
+  COUNTRY_SUGGESTIONS,
+  SKILL_SUGGESTIONS,
+} from "@/features/profile/constants";
 
 interface FormValues {
   full_name: string;
@@ -25,16 +31,10 @@ interface FormValues {
   expected_graduation: string;
   timezone: string;
   weekly_digest_enabled: boolean;
-  companies: string; // comma-separated
-  countries: string; // comma-separated
-  skills: string; // comma-separated
+  companies: string[];
+  countries: string[];
+  skills: string[];
 }
-
-const csvToArray = (value: string) =>
-  value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 
 const emptyToNull = (value: string) => {
   const trimmed = value.trim();
@@ -49,9 +49,9 @@ function toFormValues(profile: Profile): FormValues {
     expected_graduation: profile.expected_graduation ?? "",
     timezone: profile.timezone ?? "UTC",
     weekly_digest_enabled: profile.weekly_digest_enabled ?? true,
-    companies: (profile.preferred_companies ?? []).join(", "),
-    countries: (profile.preferred_countries ?? []).join(", "),
-    skills: (profile.skills ?? []).join(", "),
+    companies: profile.preferred_companies ?? [],
+    countries: profile.preferred_countries ?? [],
+    skills: profile.skills ?? [],
   };
 }
 
@@ -63,9 +63,9 @@ function toUpdate(values: FormValues): ProfileUpdate {
     expected_graduation: emptyToNull(values.expected_graduation),
     timezone: values.timezone.trim() || "UTC",
     weekly_digest_enabled: values.weekly_digest_enabled,
-    preferred_companies: csvToArray(values.companies),
-    preferred_countries: csvToArray(values.countries),
-    skills: csvToArray(values.skills),
+    preferred_companies: values.companies,
+    preferred_countries: values.countries,
+    skills: values.skills,
   };
 }
 
@@ -76,7 +76,19 @@ export function ProfileForm() {
     queryFn: getProfile,
   });
 
-  const { register, handleSubmit, reset, formState } = useForm<FormValues>();
+  const { register, handleSubmit, reset, control, formState } = useForm<FormValues>({
+    defaultValues: {
+      full_name: "",
+      preferred_role: "",
+      preferred_remote: "",
+      expected_graduation: "",
+      timezone: "UTC",
+      weekly_digest_enabled: true,
+      companies: [],
+      countries: [],
+      skills: [],
+    },
+  });
 
   useEffect(() => {
     if (data) reset(toFormValues(data));
@@ -129,24 +141,52 @@ export function ProfileForm() {
         />
       </Field>
 
-      <Field label="Skills" htmlFor="skills" hint="Comma-separated, e.g. Python, React, SQL">
-        <Input id="skills" placeholder="Python, React, SQL" {...register("skills")} />
+      <Field label="Skills" htmlFor="skills" hint="Type to search or add your own, then Enter">
+        <Controller
+          control={control}
+          name="skills"
+          render={({ field }) => (
+            <TagInput
+              id="skills"
+              value={field.value}
+              onChange={field.onChange}
+              suggestions={SKILL_SUGGESTIONS}
+              placeholder="Python, React, SQL…"
+            />
+          )}
+        />
       </Field>
 
-      <Field
-        label="Preferred companies"
-        htmlFor="companies"
-        hint="Comma-separated, e.g. Google, Stripe, OpenAI"
-      >
-        <Input id="companies" placeholder="Google, Stripe, OpenAI" {...register("companies")} />
+      <Field label="Preferred companies" htmlFor="companies">
+        <Controller
+          control={control}
+          name="companies"
+          render={({ field }) => (
+            <TagInput
+              id="companies"
+              value={field.value}
+              onChange={field.onChange}
+              suggestions={COMPANY_SUGGESTIONS}
+              placeholder="Google, Stripe, OpenAI…"
+            />
+          )}
+        />
       </Field>
 
-      <Field
-        label="Preferred countries"
-        htmlFor="countries"
-        hint="Comma-separated, e.g. India, Germany, USA"
-      >
-        <Input id="countries" placeholder="India, Germany, USA" {...register("countries")} />
+      <Field label="Preferred countries" htmlFor="countries">
+        <Controller
+          control={control}
+          name="countries"
+          render={({ field }) => (
+            <TagInput
+              id="countries"
+              value={field.value}
+              onChange={field.onChange}
+              suggestions={COUNTRY_SUGGESTIONS}
+              placeholder="India, Germany, United States…"
+            />
+          )}
+        />
       </Field>
 
       <Field label="Work preference" htmlFor="preferred_remote">
