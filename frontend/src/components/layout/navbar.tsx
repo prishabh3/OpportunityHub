@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { UserMenu } from "@/features/auth/components/user-menu";
@@ -38,6 +39,13 @@ export async function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/search"
+            aria-label="Search"
+            className="flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+          >
+            <SearchIcon className="size-5" />
+          </Link>
           {user ? (
             <>
               <NotificationBell />

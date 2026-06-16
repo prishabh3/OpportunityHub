@@ -54,7 +54,7 @@ async def list_opportunities(
         q=q,
         tag=tag,
     )
-    return await OpportunityService(session).list(filters, limit, cursor)
+    return await OpportunityService(session).list_page(filters, limit, cursor)
 
 
 @router.get("/opportunities/{opportunity_id}", response_model=OpportunityDetail)

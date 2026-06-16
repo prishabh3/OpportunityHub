@@ -17,7 +17,7 @@ class OpportunityService:
     def __init__(self, session: AsyncSession) -> None:
         self._repo = OpportunityRepository(session)
 
-    async def list(
+    async def list_page(
         self, filters: OpportunityFilters, limit: int, cursor: str | None
     ) -> Page[OpportunitySummary]:
         decoded = decode_cursor(cursor) if cursor else None
@@ -30,6 +30,12 @@ class OpportunityService:
             data=[self._to_summary(o) for o in rows],
             page=PageMeta(next_cursor=next_cursor, has_more=has_more, limit=limit),
         )
+
+    async def search(self, query: str, limit: int) -> list[OpportunitySummary]:
+        if not query.strip():
+            return []
+        rows = await self._repo.search(query.strip(), limit)
+        return [self._to_summary(o) for o in rows]
 
     async def get(self, opportunity_id: str) -> OpportunityDetail:
         opportunity = await self._repo.get(opportunity_id)

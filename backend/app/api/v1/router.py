@@ -8,6 +8,7 @@ from app.api.v1 import (
     opportunities,
     profile,
     recommendations,
+    search,
 )
 
 api_router = APIRouter()
@@ -18,6 +19,7 @@ api_router.include_router(bookmarks.router)
 api_router.include_router(recommendations.router)
 api_router.include_router(ingest.router)
 api_router.include_router(notifications.router)
+api_router.include_router(search.router)
 
-# Additional routers (search, calendar, dashboard, admin) are registered here
-# as they're implemented in later milestones.
+# Additional routers (calendar, dashboard, admin) are registered here as
+# they're implemented in later milestones.

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -73,6 +73,23 @@ class OpportunityRepository:
 
     async def get(self, opportunity_id: str) -> Opportunity | None:
         return await self._session.get(Opportunity, opportunity_id)
+
+    async def search(self, query: str, limit: int) -> list[Opportunity]:
+        """Full-text search over the maintained search_vector, ranked by
+        relevance. Uses websearch_to_tsquery so natural queries (quotes, OR,
+        -exclusions) work."""
+        tsquery = func.websearch_to_tsquery("english", query)
+        stmt = (
+            select(Opportunity)
+            .where(text("search_vector @@ websearch_to_tsquery('english', :q)"))
+            .order_by(
+                func.ts_rank(text("search_vector"), tsquery).desc(),
+                Opportunity.created_at.desc(),
+            )
+            .limit(limit)
+        ).params(q=query)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().unique().all())
 
     async def fetch_for_scoring(self, limit: int = 300) -> list[Opportunity]:
         """A recent pool of active opportunities to score for recommendations."""
