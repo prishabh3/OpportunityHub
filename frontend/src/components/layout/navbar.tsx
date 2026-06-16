@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 
 import { UserMenu } from "@/features/auth/components/user-menu";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { createClient } from "@/lib/supabase/server";
 
 const links = [
@@ -46,6 +47,7 @@ export async function Navbar() {
           >
             <SearchIcon className="size-5" />
           </Link>
+          <ThemeToggle />
           {user ? (
             <>
               <NotificationBell />
