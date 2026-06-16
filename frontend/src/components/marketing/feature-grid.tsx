@@ -14,39 +14,39 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const features = [
   {
     icon: Sparkles,
-    title: "Continuous aggregation",
+    title: "Always-fresh listings",
     description:
-      "Isolated connectors pull from Google, Microsoft, Amazon, Devpost, MLH, Unstop, YC, and more — deduplicated and normalized into one feed.",
+      "Live connectors pull hundreds of real hackathons and jobs from Devpost, Unstop, and company boards like Stripe, Databricks, and Anthropic — deduplicated and refreshed automatically.",
   },
   {
     icon: SlidersHorizontal,
-    title: "Real filters that matter",
+    title: "Filters that actually help",
     description:
-      "Filter by type, tags, country, remote/hybrid/onsite, difficulty, and prize pool — across hackathons, internships, jobs, and research programs.",
+      "Narrow by category, type, experience level (intern → senior), remote / hybrid / onsite, and country — then search across everything full-text.",
   },
   {
     icon: FileSearch,
-    title: "Resume-aware matching",
+    title: "Matched to your profile",
     description:
-      "Upload your resume to get a match score, missing-skill breakdown, and tailored suggestions for every opportunity.",
+      "Add your skills and preferences and every opportunity gets a match score — so the most relevant ones rise to the top of your dashboard.",
   },
   {
     icon: Bell,
-    title: "Deadline intelligence",
+    title: "Deadline reminders",
     description:
-      "Get notified 7 days and 24 hours before a deadline — and immediately if a deadline changes — via email, Discord, Telegram, or push.",
+      "Bookmark anything and get an in-app reminder as its deadline approaches, so nothing slips by unnoticed.",
   },
   {
     icon: Bookmark,
-    title: "Bookmarks & folders",
+    title: "Save what matters",
     description:
-      "Organize opportunities into folders with notes and tags, and export everything to your calendar via ICS or Google Calendar sync.",
+      "One click to bookmark an opportunity from any list, and find everything you've saved in one place.",
   },
   {
     icon: Calendar,
-    title: "Personalized dashboard",
+    title: "Your dashboard",
     description:
-      "Upcoming deadlines, recommended opportunities, recently added, and trending — tailored to your skills and preferences.",
+      "A personalized home that surfaces opportunities recommended for you, with quick access to your bookmarks and profile.",
   },
 ];
 
