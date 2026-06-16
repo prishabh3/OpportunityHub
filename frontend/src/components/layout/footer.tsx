@@ -9,8 +9,11 @@ export function Footer() {
           <Link href="/opportunities" className="hover:text-foreground">
             Opportunities
           </Link>
-          <Link href="/#features" className="hover:text-foreground">
-            Features
+          <Link href="/opportunities?type=hackathon" className="hover:text-foreground">
+            Hackathons
+          </Link>
+          <Link href="/opportunities?type=full_time_job" className="hover:text-foreground">
+            Jobs
           </Link>
           <Link href="/sign-in" className="hover:text-foreground">
             Sign in
