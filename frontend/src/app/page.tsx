@@ -4,16 +4,23 @@ import { Hero } from "@/components/marketing/hero";
 import { SourceStrip } from "@/components/marketing/source-strip";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { Cta } from "@/components/marketing/cta";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
+
   return (
     <>
       <Navbar />
       <main className="flex-1">
-        <Hero />
+        <Hero isAuthenticated={isAuthenticated} />
         <SourceStrip />
         <FeatureGrid />
-        <Cta />
+        <Cta isAuthenticated={isAuthenticated} />
       </main>
       <Footer />
     </>

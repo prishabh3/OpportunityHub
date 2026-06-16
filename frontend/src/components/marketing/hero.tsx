@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
-export function Hero() {
+export function Hero({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <section className="relative overflow-hidden px-6 pt-24 pb-20 text-center">
       <div
@@ -36,9 +36,15 @@ export function Hero() {
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-          <Button size="lg" nativeButton={false} render={<Link href="/sign-up" />}>
-            Get started for free <ArrowRight className="ml-1 size-4" />
-          </Button>
+          {isAuthenticated ? (
+            <Button size="lg" nativeButton={false} render={<Link href="/dashboard" />}>
+              Go to dashboard <ArrowRight className="ml-1 size-4" />
+            </Button>
+          ) : (
+            <Button size="lg" nativeButton={false} render={<Link href="/sign-up" />}>
+              Get started for free <ArrowRight className="ml-1 size-4" />
+            </Button>
+          )}
           <Button
             size="lg"
             variant="outline"
