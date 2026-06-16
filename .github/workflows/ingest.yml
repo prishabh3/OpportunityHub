@@ -17,3 +17,9 @@ jobs:
           curl -fsS --max-time 600 -X POST \
             "https://opportunityhub-api-2rkh.onrender.com/api/v1/ingest/run" \
             -H "X-Ingest-Token: ${{ secrets.INGEST_TOKEN }}"
+
+      - name: Generate deadline reminders
+        run: |
+          curl -fsS --max-time 300 -X POST \
+            "https://opportunityhub-api-2rkh.onrender.com/api/v1/notifications/run" \
+            -H "X-Ingest-Token: ${{ secrets.INGEST_TOKEN }}"

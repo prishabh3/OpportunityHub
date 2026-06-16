@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 import { UserMenu } from "@/features/auth/components/user-menu";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { createClient } from "@/lib/supabase/server";
 
 const links = [
@@ -38,7 +39,10 @@ export async function Navbar() {
 
         <div className="flex items-center gap-2">
           {user ? (
-            <UserMenu email={user.email ?? "account"} />
+            <>
+              <NotificationBell />
+              <UserMenu email={user.email ?? "account"} />
+            </>
           ) : (
             <>
               <Button variant="ghost" nativeButton={false} render={<Link href="/sign-in" />}>

@@ -1,3 +1,4 @@
+import hmac
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Annotated
@@ -89,3 +90,12 @@ async def require_admin(
     if user.role != "admin":
         raise ForbiddenError("Admin role required")
     return user
+
+
+def verify_job_token(x_ingest_token: Annotated[str | None, Header()] = None) -> None:
+    """Shared-secret guard for cron-triggered jobs (ingest, notifications)."""
+    settings = get_settings()
+    if not settings.ingest_token:
+        raise ForbiddenError("Scheduled jobs are not configured")
+    if not x_ingest_token or not hmac.compare_digest(x_ingest_token, settings.ingest_token):
+        raise UnauthorizedError("Invalid job token")
