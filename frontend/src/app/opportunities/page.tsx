@@ -3,10 +3,15 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { OpportunityList } from "@/features/opportunities/components/opportunity-list";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Opportunities — OpportunityHub" };
 
-export default function OpportunitiesPage() {
+export default async function OpportunitiesPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return (
     <>
       <Navbar />
@@ -17,7 +22,7 @@ export default function OpportunitiesPage() {
             Hackathons, internships, jobs, research programs, and competitions — in one place.
           </p>
         </div>
-        <OpportunityList />
+        <OpportunityList isAuthenticated={!!user} />
       </main>
       <Footer />
     </>

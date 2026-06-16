@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api-client";
+import { BookmarkButton } from "@/features/bookmarks/components/bookmark-button";
 import { getOpportunity, REMOTE_LABELS, TYPE_LABELS } from "@/features/opportunities/api";
 
 function formatDate(iso: string | null): string | null {
@@ -21,7 +22,13 @@ function formatDate(iso: string | null): string | null {
   });
 }
 
-export function OpportunityDetail({ id }: { id: string }) {
+export function OpportunityDetail({
+  id,
+  isAuthenticated,
+}: {
+  id: string;
+  isAuthenticated: boolean;
+}) {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["opportunity", id],
     queryFn: () => getOpportunity(id),
@@ -122,6 +129,7 @@ export function OpportunityDetail({ id }: { id: string }) {
           Apply now
           <ArrowUpRight className="size-4" />
         </Button>
+        <BookmarkButton opportunityId={data.id} isAuthenticated={isAuthenticated} withLabel />
       </div>
 
       {data.description && (

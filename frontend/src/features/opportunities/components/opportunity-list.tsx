@@ -36,7 +36,7 @@ const REMOTE_OPTIONS: { value: RemoteType | ""; label: string }[] = [
 const selectClass =
   "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
-export function OpportunityList() {
+export function OpportunityList({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const [type, setType] = useState<OpportunityType | "">("");
   const [remote, setRemote] = useState<RemoteType | "">("");
   const [searchInput, setSearchInput] = useState("");
@@ -126,7 +126,11 @@ export function OpportunityList() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((opportunity) => (
-              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={opportunity}
+                isAuthenticated={isAuthenticated}
+              />
             ))}
           </div>
           {hasNextPage && (

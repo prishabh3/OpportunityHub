@@ -3,6 +3,7 @@ import { CalendarClock, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { BookmarkButton } from "@/features/bookmarks/components/bookmark-button";
 import { REMOTE_LABELS, TYPE_LABELS, type OpportunitySummary } from "@/features/opportunities/api";
 
 function formatDeadline(iso: string | null): string | null {
@@ -20,7 +21,15 @@ function formatDeadline(iso: string | null): string | null {
   return formatted;
 }
 
-export function OpportunityCard({ opportunity }: { opportunity: OpportunitySummary }) {
+export function OpportunityCard({
+  opportunity,
+  isAuthenticated = false,
+  matchScore,
+}: {
+  opportunity: OpportunitySummary;
+  isAuthenticated?: boolean;
+  matchScore?: number;
+}) {
   const deadline = formatDeadline(opportunity.deadline_at);
   const place =
     opportunity.location ??
@@ -30,12 +39,13 @@ export function OpportunityCard({ opportunity }: { opportunity: OpportunitySumma
     <Link href={`/opportunities/${opportunity.id}`} className="group">
       <Card className="flex h-full flex-col gap-3 p-5 transition-colors group-hover:border-primary/50">
         <div className="flex items-center justify-between gap-2">
-          <Badge variant="secondary">{TYPE_LABELS[opportunity.type]}</Badge>
-          {opportunity.remote_type !== "unspecified" && (
-            <span className="text-xs text-muted-foreground">
-              {REMOTE_LABELS[opportunity.remote_type]}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{TYPE_LABELS[opportunity.type]}</Badge>
+            {matchScore !== undefined && matchScore > 0 && (
+              <Badge className="bg-primary/15 text-primary">{Math.round(matchScore)}% match</Badge>
+            )}
+          </div>
+          <BookmarkButton opportunityId={opportunity.id} isAuthenticated={isAuthenticated} />
         </div>
 
         <div className="flex-1">
