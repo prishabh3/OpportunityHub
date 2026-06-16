@@ -18,11 +18,7 @@ import {
   type ProfileUpdate,
   type RemoteType,
 } from "@/features/profile/api";
-import {
-  COMPANY_SUGGESTIONS,
-  COUNTRY_SUGGESTIONS,
-  SKILL_SUGGESTIONS,
-} from "@/features/profile/constants";
+import { COUNTRY_SUGGESTIONS, SKILL_SUGGESTIONS } from "@/features/profile/constants";
 
 interface FormValues {
   full_name: string;
@@ -31,7 +27,6 @@ interface FormValues {
   expected_graduation: string;
   timezone: string;
   weekly_digest_enabled: boolean;
-  companies: string[];
   countries: string[];
   skills: string[];
 }
@@ -49,7 +44,6 @@ function toFormValues(profile: Profile): FormValues {
     expected_graduation: profile.expected_graduation ?? "",
     timezone: profile.timezone ?? "UTC",
     weekly_digest_enabled: profile.weekly_digest_enabled ?? true,
-    companies: profile.preferred_companies ?? [],
     countries: profile.preferred_countries ?? [],
     skills: profile.skills ?? [],
   };
@@ -63,7 +57,6 @@ function toUpdate(values: FormValues): ProfileUpdate {
     expected_graduation: emptyToNull(values.expected_graduation),
     timezone: values.timezone.trim() || "UTC",
     weekly_digest_enabled: values.weekly_digest_enabled,
-    preferred_companies: values.companies,
     preferred_countries: values.countries,
     skills: values.skills,
   };
@@ -84,7 +77,6 @@ export function ProfileForm() {
       expected_graduation: "",
       timezone: "UTC",
       weekly_digest_enabled: true,
-      companies: [],
       countries: [],
       skills: [],
     },
@@ -152,22 +144,6 @@ export function ProfileForm() {
               onChange={field.onChange}
               suggestions={SKILL_SUGGESTIONS}
               placeholder="Python, React, SQL…"
-            />
-          )}
-        />
-      </Field>
-
-      <Field label="Preferred companies" htmlFor="companies">
-        <Controller
-          control={control}
-          name="companies"
-          render={({ field }) => (
-            <TagInput
-              id="companies"
-              value={field.value}
-              onChange={field.onChange}
-              suggestions={COMPANY_SUGGESTIONS}
-              placeholder="Google, Stripe, OpenAI…"
             />
           )}
         />
