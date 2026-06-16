@@ -13,6 +13,39 @@ COUNTRY_WEIGHT = 20
 REMOTE_WEIGHT = 20
 SKILL_CAP = 5  # matched skills beyond this don't add more
 
+# Opportunities tagged with one of these are location-independent and count as a
+# country match for everyone.
+_GLOBAL_COUNTRIES = {"global", "worldwide", "remote", "anywhere", "international", "online"}
+
+# Common country aliases normalized to one canonical form so "USA" matches a
+# stated preference of "United States", etc.
+_COUNTRY_ALIASES = {
+    "usa": "united states",
+    "us": "united states",
+    "u.s.": "united states",
+    "u.s.a.": "united states",
+    "united states of america": "united states",
+    "uk": "united kingdom",
+    "u.k.": "united kingdom",
+    "britain": "united kingdom",
+    "great britain": "united kingdom",
+    "uae": "united arab emirates",
+}
+
+
+def _normalize_country(country: str) -> str:
+    key = country.strip().lower()
+    return _COUNTRY_ALIASES.get(key, key)
+
+
+def _country_matches(opp_country: str | None, preferred: set[str]) -> bool:
+    if not preferred or not opp_country:
+        return False
+    normalized = _normalize_country(opp_country)
+    if normalized in _GLOBAL_COUNTRIES:
+        return True
+    return normalized in preferred
+
 
 class RecommendationService:
     """Heuristic, no-LLM recommendations: rank opportunities by how well their
@@ -27,7 +60,7 @@ class RecommendationService:
         profile = await ProfileService(self._session).get_or_create(user)
 
         user_skills = {s.lower() for s in profile.skills}
-        pref_countries = {c.lower() for c in profile.preferred_countries}
+        pref_countries = {_normalize_country(c) for c in profile.preferred_countries}
         pref_remote = profile.preferred_remote
 
         candidates = await self._opportunities.fetch_for_scoring()
@@ -41,9 +74,7 @@ class RecommendationService:
                 if user_skills
                 else 0.0
             )
-            country_score = (
-                COUNTRY_WEIGHT if opp.country and opp.country.lower() in pref_countries else 0
-            )
+            country_score = COUNTRY_WEIGHT if _country_matches(opp.country, pref_countries) else 0
             remote_score = (
                 REMOTE_WEIGHT
                 if pref_remote and pref_remote != "unspecified" and opp.remote_type == pref_remote

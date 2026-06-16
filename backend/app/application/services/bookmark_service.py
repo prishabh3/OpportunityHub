@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.dtos.bookmark import BookmarkCreate, BookmarkRead
@@ -46,9 +47,18 @@ class BookmarkService:
         if existing is not None:
             return self._to_read(existing)
 
-        bookmark = await self._repo.add(user.id, data.opportunity_id, data.notes, data.tags)
-        await self._session.commit()
-        await self._session.refresh(bookmark)
+        try:
+            bookmark = await self._repo.add(user.id, data.opportunity_id, data.notes, data.tags)
+            await self._session.commit()
+        except IntegrityError:
+            # Concurrent add hit the (user_id, opportunity_id) unique constraint —
+            # treat the request as idempotent and return the existing bookmark.
+            await self._session.rollback()
+            current = await self._repo.get(user.id, data.opportunity_id)
+            if current is None:
+                raise
+            return self._to_read(current)
+
         return self._to_read(bookmark)
 
     async def remove(self, user: AuthenticatedUser, opportunity_id: str) -> None:
