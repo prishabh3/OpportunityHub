@@ -39,7 +39,7 @@ class OpportunityRepository:
             stmt = stmt.where(Opportunity.tags.any(Tag.name == f.tag))
         return stmt
 
-    async def list(
+    async def list_page(
         self,
         filters: OpportunityFilters,
         limit: int,
@@ -71,3 +71,14 @@ class OpportunityRepository:
 
     async def get(self, opportunity_id: str) -> Opportunity | None:
         return await self._session.get(Opportunity, opportunity_id)
+
+    async def fetch_for_scoring(self, limit: int = 300) -> list[Opportunity]:
+        """A recent pool of active opportunities to score for recommendations."""
+        stmt = (
+            select(Opportunity)
+            .where(Opportunity.status == "active")
+            .order_by(Opportunity.created_at.desc())
+            .limit(limit)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().unique().all())

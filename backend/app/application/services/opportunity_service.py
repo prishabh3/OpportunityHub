@@ -21,7 +21,7 @@ class OpportunityService:
         self, filters: OpportunityFilters, limit: int, cursor: str | None
     ) -> Page[OpportunitySummary]:
         decoded = decode_cursor(cursor) if cursor else None
-        rows, has_more = await self._repo.list(filters, limit, decoded)
+        rows, has_more = await self._repo.list_page(filters, limit, decoded)
 
         next_cursor = (
             encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
