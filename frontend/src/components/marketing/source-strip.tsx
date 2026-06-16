@@ -1,19 +1,19 @@
+// Platforms we ingest from + companies whose roles/hackathons actually appear.
 const sources = [
+  "Devpost",
+  "Unstop",
+  "Stripe",
+  "Databricks",
+  "Anthropic",
   "Google",
   "Microsoft",
   "Amazon",
-  "Meta",
-  "Apple",
   "NVIDIA",
+  "Meta",
   "OpenAI",
-  "Anthropic",
-  "Stripe",
-  "Netflix",
-  "Uber",
-  "Airbnb",
-  "Devpost",
-  "MLH",
-  "Unstop",
+  "GitLab",
+  "Figma",
+  "IBM",
 ];
 
 export function SourceStrip() {

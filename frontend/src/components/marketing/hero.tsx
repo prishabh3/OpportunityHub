@@ -20,7 +20,7 @@ export function Hero({ isAuthenticated }: { isAuthenticated: boolean }) {
         className="mx-auto flex max-w-3xl flex-col items-center"
       >
         <span className="mb-6 inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-          Now tracking 30+ sources, updated hourly
+          Hundreds of live hackathons &amp; jobs, refreshed automatically
         </span>
 
         <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
