@@ -1,0 +1,19 @@
+name: ingest
+
+# Scheduled connector ingestion. Free alternative to an always-on worker:
+# this cron pings the backend's token-protected /ingest/run endpoint, which
+# fetches from Devpost/Unstop/curated sources and upserts into the database.
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ingestion
+        run: |
+          curl -fsS --max-time 600 -X POST \
+            "https://opportunityhub-api-2rkh.onrender.com/api/v1/ingest/run" \
+            -H "X-Ingest-Token: ${{ secrets.INGEST_TOKEN }}"

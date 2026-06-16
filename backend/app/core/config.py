@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = Field(default="redis://localhost:6379/0")
 
+    # Ingestion — shared secret for the /ingest/run endpoint (cron/manual trigger).
+    ingest_token: str | None = Field(default=None)
+
     # Supabase Auth
     supabase_url: AnyHttpUrl = Field(default="https://placeholder.supabase.co")  # type: ignore[assignment]
     supabase_jwt_audience: str = Field(default="authenticated")
