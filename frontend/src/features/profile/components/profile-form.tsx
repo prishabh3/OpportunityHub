@@ -48,10 +48,10 @@ function toFormValues(profile: Profile): FormValues {
     preferred_remote: profile.preferred_remote ?? "",
     expected_graduation: profile.expected_graduation ?? "",
     timezone: profile.timezone ?? "UTC",
-    weekly_digest_enabled: profile.weekly_digest_enabled,
-    companies: profile.preferred_companies.join(", "),
-    countries: profile.preferred_countries.join(", "),
-    skills: profile.skills.join(", "),
+    weekly_digest_enabled: profile.weekly_digest_enabled ?? true,
+    companies: (profile.preferred_companies ?? []).join(", "),
+    countries: (profile.preferred_countries ?? []).join(", "),
+    skills: (profile.skills ?? []).join(", "),
   };
 }
 
