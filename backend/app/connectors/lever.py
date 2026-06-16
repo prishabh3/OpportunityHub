@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Any
 
 import httpx
@@ -6,32 +5,27 @@ import httpx
 from app.connectors.base import BaseConnector, NormalizedOpportunity, SourceMeta
 from app.connectors.jobs_common import TECH_RE, classify_experience, extract_skill_tags
 
-# Verified public Greenhouse job boards. Unknown/blocked ones are skipped at runtime.
+# Verified public Lever boards. Others are skipped if they don't return a list.
 COMPANIES: list[str] = [
-    "stripe", "databricks", "gitlab", "figma", "anthropic", "discord", "reddit",
-    "coinbase", "robinhood", "ramp", "airbnb", "dropbox", "asana", "instacart",
-    "lyft", "pinterest", "twitch", "datadog", "mongodb", "elastic", "twilio",
-    "affirm", "brex", "gusto", "samsara", "faire", "chime", "nuro", "waymo",
+    "spotify",
+    "mistral",
+    "palantir",
+    "plaid",
+    "notion",
+    "cohere",
 ]
 
-_BOARD = "https://boards-api.greenhouse.io/v1/boards/{company}/jobs"
+_API = "https://api.lever.co/v0/postings/{company}?mode=json"
 _PER_COMPANY = 20
 
-
-def _parse_deadline(value: Any) -> datetime | None:
-    if not value or not isinstance(value, str):
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
+_WORKPLACE = {"remote": "remote", "hybrid": "hybrid", "on-site": "onsite", "onsite": "onsite"}
 
 
-class GreenhouseConnector(BaseConnector):
+class LeverConnector(BaseConnector):
     meta = SourceMeta(
-        key="greenhouse",
-        display_name="Company Job Boards",
-        base_url="https://boards-api.greenhouse.io",
+        key="lever",
+        display_name="Company Job Boards (Lever)",
+        base_url="https://jobs.lever.co",
         opportunity_types=["full_time_job", "internship"],
     )
 
@@ -44,18 +38,19 @@ class GreenhouseConnector(BaseConnector):
         async with httpx.AsyncClient(timeout=20, headers=headers) as client:
             for company in self._companies:
                 try:
-                    resp = await client.get(_BOARD.format(company=company))
+                    resp = await client.get(_API.format(company=company))
                     resp.raise_for_status()
-                    jobs = resp.json().get("jobs", [])
+                    postings = resp.json()
                 except (httpx.HTTPError, ValueError):
-                    continue  # skip companies whose board is missing/blocked
+                    continue
+                if not isinstance(postings, list):
+                    continue  # error/dict response — skip this board
 
                 count = 0
-                for job in jobs:
+                for job in postings:
                     if count >= _PER_COMPANY:
                         break
-                    title = job.get("title", "")
-                    if not TECH_RE.search(title):
+                    if not isinstance(job, dict) or not TECH_RE.search(job.get("text", "")):
                         continue
                     parsed = self._normalize(company, job)
                     if parsed:
@@ -65,13 +60,19 @@ class GreenhouseConnector(BaseConnector):
 
     @staticmethod
     def _normalize(company: str, job: dict[str, Any]) -> NormalizedOpportunity | None:
-        url = job.get("absolute_url")
+        url = job.get("hostedUrl") or job.get("applyUrl")
         if not url or not job.get("id"):
             return None
-        title = job.get("title", "Role")
-        location = (job.get("location") or {}).get("name")
-        is_remote = bool(location and "remote" in location.lower())
+        title = job.get("text", "Role")
+        categories = job.get("categories") or {}
+        location = categories.get("location")
+        commitment = (categories.get("commitment") or "").lower()
+        workplace = (job.get("workplaceType") or "").lower()
+        remote_type = _WORKPLACE.get(workplace, "unspecified")
+
         experience = classify_experience(title)
+        if "intern" in commitment:
+            experience = "intern"
         opp_type = "internship" if experience == "intern" else "full_time_job"
 
         return NormalizedOpportunity(
@@ -79,12 +80,11 @@ class GreenhouseConnector(BaseConnector):
             type=opp_type,
             status="active",
             title=title,
-            organizer=job.get("company_name") or company.replace("-", " ").title(),
+            organizer=company.replace("-", " ").title(),
             location=location,
-            country="Global" if is_remote else None,
-            remote_type="remote" if is_remote else "onsite",
+            country="Global" if remote_type == "remote" else (job.get("country") or None),
+            remote_type=remote_type,
             experience_level=experience,
-            deadline_at=_parse_deadline(job.get("application_deadline")),
             apply_url=url,
             source_url=url,
             tags=extract_skill_tags(title),
