@@ -18,6 +18,8 @@ class OpportunityRepository:
     ) -> "Select[tuple[Opportunity]]":
         if f.type:
             stmt = stmt.where(Opportunity.type == f.type)
+        elif f.types:
+            stmt = stmt.where(Opportunity.type.in_(f.types))
         if f.status:
             stmt = stmt.where(Opportunity.status == f.status)
         if f.country:

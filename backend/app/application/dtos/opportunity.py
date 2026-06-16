@@ -52,6 +52,7 @@ class OpportunityDetail(OpportunitySummary):
 
 class OpportunityFilters(BaseModel):
     type: OpportunityType | None = None
+    types: list[OpportunityType] | None = None  # category expansion (any-of)
     status: OpportunityStatus | None = None
     country: str | None = None
     remote_type: RemoteType | None = None

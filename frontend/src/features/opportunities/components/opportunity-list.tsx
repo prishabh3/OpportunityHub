@@ -12,12 +12,15 @@ import { ApiError } from "@/lib/api-client";
 import { OpportunityCard } from "@/features/opportunities/components/opportunity-card";
 import {
   getOpportunities,
+  type OpportunityCategory,
   type OpportunityFilters,
   type OpportunityType,
   type RemoteType,
 } from "@/features/opportunities/api";
 
-const TYPE_OPTIONS: { value: OpportunityType | ""; label: string }[] = [
+type TypeOption = { value: OpportunityType | ""; label: string };
+
+const ALL_TYPE_OPTIONS: TypeOption[] = [
   { value: "", label: "All types" },
   { value: "hackathon", label: "Hackathons" },
   { value: "internship", label: "Internships" },
@@ -25,6 +28,20 @@ const TYPE_OPTIONS: { value: OpportunityType | ""; label: string }[] = [
   { value: "research_program", label: "Research" },
   { value: "competition", label: "Competitions" },
 ];
+
+const TYPE_OPTIONS_BY_CATEGORY: Record<OpportunityCategory, TypeOption[]> = {
+  hackathons: [
+    { value: "", label: "All hackathons" },
+    { value: "hackathon", label: "Hackathons" },
+    { value: "competition", label: "Competitions" },
+  ],
+  jobs: [
+    { value: "", label: "All jobs" },
+    { value: "internship", label: "Internships" },
+    { value: "full_time_job", label: "Full-time" },
+    { value: "research_program", label: "Research" },
+  ],
+};
 
 const REMOTE_OPTIONS: { value: RemoteType | ""; label: string }[] = [
   { value: "", label: "Anywhere" },
@@ -38,15 +55,17 @@ const selectClass =
 
 export function OpportunityList({
   isAuthenticated = false,
-  initialType = "",
+  category,
 }: {
   isAuthenticated?: boolean;
-  initialType?: OpportunityType | "";
+  category?: OpportunityCategory;
 }) {
-  const [type, setType] = useState<OpportunityType | "">(initialType);
+  const [type, setType] = useState<OpportunityType | "">("");
   const [remote, setRemote] = useState<RemoteType | "">("");
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
+
+  const typeOptions = category ? TYPE_OPTIONS_BY_CATEGORY[category] : ALL_TYPE_OPTIONS;
 
   // Debounce the search box into the query filter.
   useEffect(() => {
@@ -56,11 +75,12 @@ export function OpportunityList({
 
   const filters: OpportunityFilters = useMemo(
     () => ({
+      category,
       type: type || undefined,
       remote_type: remote || undefined,
       q: q || undefined,
     }),
-    [type, remote, q],
+    [category, type, remote, q],
   );
 
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -90,7 +110,7 @@ export function OpportunityList({
           value={type}
           onChange={(e) => setType(e.target.value as OpportunityType | "")}
         >
-          {TYPE_OPTIONS.map((o) => (
+          {typeOptions.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>

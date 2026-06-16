@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,10 +18,18 @@ from app.infrastructure.db.session import get_db_session
 
 router = APIRouter(tags=["opportunities"])
 
+# Top-level categories grouping the opportunity types.
+CATEGORY_TYPES: dict[str, list[OpportunityType]] = {
+    "hackathons": ["hackathon", "competition"],
+    "jobs": ["internship", "full_time_job", "research_program"],
+}
+Category = Literal["hackathons", "jobs"]
+
 
 @router.get("/opportunities", response_model=Page[OpportunitySummary])
 async def list_opportunities(
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    category: Category | None = None,
     type: OpportunityType | None = None,
     status: OpportunityStatus | None = None,
     country: str | None = None,
@@ -32,9 +40,13 @@ async def list_opportunities(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     cursor: str | None = None,
 ) -> Page[OpportunitySummary]:
-    """Public, filterable, cursor-paginated list of opportunities."""
+    """Public, filterable, cursor-paginated list of opportunities.
+
+    `category` expands to a set of types (a specific `type` narrows within it).
+    """
     filters = OpportunityFilters(
         type=type,
+        types=CATEGORY_TYPES[category] if category else None,
         status=status,
         country=country,
         remote_type=remote_type,

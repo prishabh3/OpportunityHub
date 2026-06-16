@@ -40,7 +40,10 @@ export interface Page<T> {
   page: { next_cursor: string | null; has_more: boolean; limit: number };
 }
 
+export type OpportunityCategory = "hackathons" | "jobs";
+
 export interface OpportunityFilters {
+  category?: OpportunityCategory;
   type?: OpportunityType;
   remote_type?: RemoteType;
   country?: string;
