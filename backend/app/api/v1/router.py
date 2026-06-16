@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    admin,
     bookmarks,
     health,
     ingest,
@@ -20,6 +21,7 @@ api_router.include_router(recommendations.router)
 api_router.include_router(ingest.router)
 api_router.include_router(notifications.router)
 api_router.include_router(search.router)
+api_router.include_router(admin.router)
 
-# Additional routers (calendar, dashboard, admin) are registered here as
-# they're implemented in later milestones.
+# Additional routers (calendar, dashboard) are registered here as they're
+# implemented in later milestones.

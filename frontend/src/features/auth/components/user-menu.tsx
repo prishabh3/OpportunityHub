@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Bookmark, LayoutDashboard, LogOut, User } from "lucide-react";
+import { Bookmark, LayoutDashboard, LogOut, Shield, User } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
 
-export function UserMenu({ email }: { email: string }) {
+export function UserMenu({ email, isAdmin = false }: { email: string; isAdmin?: boolean }) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -62,6 +62,12 @@ export function UserMenu({ email }: { email: string }) {
           <User className="size-4" />
           Profile
         </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem onClick={() => router.push("/admin")}>
+            <Shield className="size-4" />
+            Admin
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={signOut}>
           <LogOut className="size-4" />

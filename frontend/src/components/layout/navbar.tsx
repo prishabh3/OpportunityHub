@@ -49,7 +49,12 @@ export async function Navbar() {
           {user ? (
             <>
               <NotificationBell />
-              <UserMenu email={user.email ?? "account"} />
+              <UserMenu
+                email={user.email ?? "account"}
+                isAdmin={
+                  (user.app_metadata as { role?: string } | undefined)?.role === "admin"
+                }
+              />
             </>
           ) : (
             <>
