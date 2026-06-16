@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.dtos.opportunity import (
     DifficultyLevel,
+    ExperienceLevel,
     OpportunityDetail,
     OpportunityFilters,
     OpportunityStatus,
@@ -35,6 +36,7 @@ async def list_opportunities(
     country: str | None = None,
     remote_type: RemoteType | None = None,
     difficulty: DifficultyLevel | None = None,
+    experience_level: ExperienceLevel | None = None,
     q: str | None = None,
     tag: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
@@ -51,6 +53,7 @@ async def list_opportunities(
         country=country,
         remote_type=remote_type,
         difficulty=difficulty,
+        experience_level=experience_level,
         q=q,
         tag=tag,
     )

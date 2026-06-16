@@ -55,6 +55,7 @@ class OpportunityService:
             country=o.country,
             remote_type=o.remote_type,
             difficulty=o.difficulty,
+            experience_level=o.experience_level,
             deadline_at=o.deadline_at,
             starts_at=o.starts_at,
             apply_url=o.apply_url,

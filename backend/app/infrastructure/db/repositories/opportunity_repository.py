@@ -28,6 +28,8 @@ class OpportunityRepository:
             stmt = stmt.where(Opportunity.remote_type == f.remote_type)
         if f.difficulty:
             stmt = stmt.where(Opportunity.difficulty == f.difficulty)
+        if f.experience_level:
+            stmt = stmt.where(Opportunity.experience_level == f.experience_level)
         if f.q:
             like = f"%{f.q}%"
             stmt = stmt.where(

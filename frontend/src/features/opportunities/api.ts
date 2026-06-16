@@ -8,6 +8,7 @@ export type OpportunityType =
   | "competition";
 export type RemoteType = "remote" | "hybrid" | "onsite" | "unspecified";
 export type DifficultyLevel = "beginner" | "intermediate" | "advanced" | "unspecified";
+export type ExperienceLevel = "intern" | "fresher" | "mid" | "senior" | "unspecified";
 
 export interface OpportunitySummary {
   id: string;
@@ -19,6 +20,7 @@ export interface OpportunitySummary {
   country: string | null;
   remote_type: RemoteType;
   difficulty: DifficultyLevel;
+  experience_level: ExperienceLevel;
   deadline_at: string | null;
   starts_at: string | null;
   apply_url: string;
@@ -46,9 +48,18 @@ export interface OpportunityFilters {
   category?: OpportunityCategory;
   type?: OpportunityType;
   remote_type?: RemoteType;
+  experience_level?: ExperienceLevel;
   country?: string;
   q?: string;
 }
+
+export const EXPERIENCE_LABELS: Record<ExperienceLevel, string> = {
+  intern: "Intern",
+  fresher: "Fresher (0 yrs)",
+  mid: "Mid-level",
+  senior: "Senior",
+  unspecified: "—",
+};
 
 export function getOpportunities(
   filters: OpportunityFilters,

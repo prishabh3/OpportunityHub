@@ -4,7 +4,12 @@ import { CalendarClock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { BookmarkButton } from "@/features/bookmarks/components/bookmark-button";
-import { REMOTE_LABELS, TYPE_LABELS, type OpportunitySummary } from "@/features/opportunities/api";
+import {
+  EXPERIENCE_LABELS,
+  REMOTE_LABELS,
+  TYPE_LABELS,
+  type OpportunitySummary,
+} from "@/features/opportunities/api";
 
 function formatDeadline(iso: string | null): string | null {
   if (!iso) return null;
@@ -39,8 +44,11 @@ export function OpportunityCard({
     <Link href={`/opportunities/${opportunity.id}`} className="group">
       <Card className="flex h-full flex-col gap-3 p-5 transition-colors group-hover:border-primary/50">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{TYPE_LABELS[opportunity.type]}</Badge>
+            {opportunity.experience_level !== "unspecified" && (
+              <Badge variant="outline">{EXPERIENCE_LABELS[opportunity.experience_level]}</Badge>
+            )}
             {matchScore !== undefined && matchScore > 0 && (
               <Badge className="bg-primary/15 text-primary">{Math.round(matchScore)}% match</Badge>
             )}

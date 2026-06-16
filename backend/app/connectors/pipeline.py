@@ -67,6 +67,7 @@ async def _apply_fields(opp: Opportunity, item: NormalizedOpportunity, content_h
     opp.country = item.country
     opp.remote_type = item.remote_type
     opp.difficulty = item.difficulty
+    opp.experience_level = item.experience_level
     opp.deadline_at = item.deadline_at
     opp.starts_at = item.starts_at
     opp.ends_at = item.ends_at

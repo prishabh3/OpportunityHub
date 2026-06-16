@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/api-client";
 import { OpportunityCard } from "@/features/opportunities/components/opportunity-card";
 import {
   getOpportunities,
+  type ExperienceLevel,
   type OpportunityCategory,
   type OpportunityFilters,
   type OpportunityType,
@@ -50,6 +51,14 @@ const REMOTE_OPTIONS: { value: RemoteType | ""; label: string }[] = [
   { value: "onsite", label: "Onsite" },
 ];
 
+const EXPERIENCE_OPTIONS: { value: ExperienceLevel | ""; label: string }[] = [
+  { value: "", label: "Any experience" },
+  { value: "intern", label: "Intern" },
+  { value: "fresher", label: "Fresher (0 yrs)" },
+  { value: "mid", label: "Mid-level" },
+  { value: "senior", label: "Senior" },
+];
+
 const selectClass =
   "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
@@ -62,10 +71,12 @@ export function OpportunityList({
 }) {
   const [type, setType] = useState<OpportunityType | "">("");
   const [remote, setRemote] = useState<RemoteType | "">("");
+  const [experience, setExperience] = useState<ExperienceLevel | "">("");
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
 
   const typeOptions = category ? TYPE_OPTIONS_BY_CATEGORY[category] : ALL_TYPE_OPTIONS;
+  const showExperience = category === "jobs" || category === undefined;
 
   // Debounce the search box into the query filter.
   useEffect(() => {
@@ -78,9 +89,10 @@ export function OpportunityList({
       category,
       type: type || undefined,
       remote_type: remote || undefined,
+      experience_level: experience || undefined,
       q: q || undefined,
     }),
-    [category, type, remote, q],
+    [category, type, remote, experience, q],
   );
 
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -127,6 +139,19 @@ export function OpportunityList({
             </option>
           ))}
         </select>
+        {showExperience && (
+          <select
+            className={selectClass}
+            value={experience}
+            onChange={(e) => setExperience(e.target.value as ExperienceLevel | "")}
+          >
+            {EXPERIENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {isError ? (

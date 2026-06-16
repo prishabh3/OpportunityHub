@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.application.dtos.opportunity import (
     DifficultyLevel,
+    ExperienceLevel,
     OpportunityStatus,
     OpportunityType,
     RemoteType,
@@ -36,6 +37,7 @@ class NormalizedOpportunity(BaseModel):
     country: str | None = None
     remote_type: RemoteType = "unspecified"
     difficulty: DifficultyLevel = "unspecified"
+    experience_level: ExperienceLevel = "unspecified"
     deadline_at: datetime | None = None
     starts_at: datetime | None = None
     ends_at: datetime | None = None
@@ -55,6 +57,7 @@ class NormalizedOpportunity(BaseModel):
             "location": self.location,
             "country": self.country,
             "remote_type": self.remote_type,
+            "experience_level": self.experience_level,
             "deadline_at": self.deadline_at.isoformat() if self.deadline_at else None,
             "starts_at": self.starts_at.isoformat() if self.starts_at else None,
             "apply_url": self.apply_url,

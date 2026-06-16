@@ -9,6 +9,7 @@ OpportunityType = Literal[
 OpportunityStatus = Literal["upcoming", "active", "closed", "archived"]
 RemoteType = Literal["remote", "hybrid", "onsite", "unspecified"]
 DifficultyLevel = Literal["beginner", "intermediate", "advanced", "unspecified"]
+ExperienceLevel = Literal["intern", "fresher", "mid", "senior", "unspecified"]
 
 
 class SourceRead(BaseModel):
@@ -32,6 +33,7 @@ class OpportunitySummary(BaseModel):
     country: str | None = None
     remote_type: RemoteType
     difficulty: DifficultyLevel
+    experience_level: ExperienceLevel = "unspecified"
     deadline_at: datetime | None = None
     starts_at: datetime | None = None
     apply_url: str
@@ -57,5 +59,6 @@ class OpportunityFilters(BaseModel):
     country: str | None = None
     remote_type: RemoteType | None = None
     difficulty: DifficultyLevel | None = None
+    experience_level: ExperienceLevel | None = None
     q: str | None = None
     tag: str | None = None
