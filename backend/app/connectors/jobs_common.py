@@ -40,10 +40,13 @@ def extract_skill_tags(title: str) -> list[str]:
     return [kw for kw in _SKILL_KEYWORDS if kw.lower() in title.lower()][:5]
 
 
-_INDIA_KEYWORDS = (
-    "india", "bengaluru", "bangalore", "mumbai", "delhi", "hyderabad", "pune",
-    "chennai", "gurgaon", "gurugram", "noida", "kolkata", "ahmedabad",
+# Word-boundary match so "india" doesn't match "Indiana", "pune" not "Neptune", etc.
+_INDIA_RE = re.compile(
+    r"\b(india|bengaluru|bangalore|mumbai|new delhi|delhi|hyderabad|pune|chennai|"
+    r"gurgaon|gurugram|noida|kolkata|ahmedabad)\b",
+    re.IGNORECASE,
 )
+_REMOTE_RE = re.compile(r"\b(remote|anywhere|worldwide)\b", re.IGNORECASE)
 
 
 def infer_country(location: str | None) -> str | None:
@@ -51,9 +54,8 @@ def infer_country(location: str | None) -> str | None:
     (from any company board) are tagged for Indian students."""
     if not location:
         return None
-    loc = location.lower()
-    if any(k in loc for k in _INDIA_KEYWORDS):
+    if _INDIA_RE.search(location):
         return "India"
-    if "remote" in loc or "anywhere" in loc:
+    if _REMOTE_RE.search(location):
         return "Global"
     return None
