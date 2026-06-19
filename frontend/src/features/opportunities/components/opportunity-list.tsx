@@ -59,6 +59,12 @@ const EXPERIENCE_OPTIONS: { value: ExperienceLevel | ""; label: string }[] = [
   { value: "senior", label: "Senior" },
 ];
 
+const COUNTRY_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Anywhere" },
+  { value: "India", label: "India" },
+  { value: "Global", label: "Remote / Global" },
+];
+
 const selectClass =
   "h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
@@ -72,6 +78,7 @@ export function OpportunityList({
   const [type, setType] = useState<OpportunityType | "">("");
   const [remote, setRemote] = useState<RemoteType | "">("");
   const [experience, setExperience] = useState<ExperienceLevel | "">("");
+  const [country, setCountry] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
 
@@ -90,9 +97,10 @@ export function OpportunityList({
       type: type || undefined,
       remote_type: remote || undefined,
       experience_level: experience || undefined,
+      country: country || undefined,
       q: q || undefined,
     }),
-    [category, type, remote, experience, q],
+    [category, type, remote, experience, country, q],
   );
 
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -123,6 +131,17 @@ export function OpportunityList({
           onChange={(e) => setType(e.target.value as OpportunityType | "")}
         >
           {typeOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className={selectClass}
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+        >
+          {COUNTRY_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
