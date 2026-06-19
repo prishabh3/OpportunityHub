@@ -4,7 +4,12 @@ from typing import Any
 import httpx
 
 from app.connectors.base import BaseConnector, NormalizedOpportunity, SourceMeta
-from app.connectors.jobs_common import TECH_RE, classify_experience, extract_skill_tags
+from app.connectors.jobs_common import (
+    TECH_RE,
+    classify_experience,
+    extract_skill_tags,
+    infer_country,
+)
 
 # Verified public Greenhouse job boards. Unknown/blocked ones are skipped at runtime.
 COMPANIES: list[str] = [
@@ -12,6 +17,8 @@ COMPANIES: list[str] = [
     "coinbase", "robinhood", "ramp", "airbnb", "dropbox", "asana", "instacart",
     "lyft", "pinterest", "twitch", "datadog", "mongodb", "elastic", "twilio",
     "affirm", "brex", "gusto", "samsara", "faire", "chime", "nuro", "waymo",
+    # Indian company boards
+    "postman", "phonepe",
 ]
 
 _BOARD = "https://boards-api.greenhouse.io/v1/boards/{company}/jobs"
@@ -81,7 +88,7 @@ class GreenhouseConnector(BaseConnector):
             title=title,
             organizer=job.get("company_name") or company.replace("-", " ").title(),
             location=location,
-            country="Global" if is_remote else None,
+            country=infer_country(location) or ("Global" if is_remote else None),
             remote_type="remote" if is_remote else "onsite",
             experience_level=experience,
             deadline_at=_parse_deadline(job.get("application_deadline")),

@@ -3,7 +3,12 @@ from typing import Any
 import httpx
 
 from app.connectors.base import BaseConnector, NormalizedOpportunity, SourceMeta
-from app.connectors.jobs_common import TECH_RE, classify_experience, extract_skill_tags
+from app.connectors.jobs_common import (
+    TECH_RE,
+    classify_experience,
+    extract_skill_tags,
+    infer_country,
+)
 
 # Verified public Lever boards. Others are skipped if they don't return a list.
 COMPANIES: list[str] = [
@@ -13,6 +18,9 @@ COMPANIES: list[str] = [
     "plaid",
     "notion",
     "cohere",
+    # Indian company boards
+    "cred",
+    "meesho",
 ]
 
 _API = "https://api.lever.co/v0/postings/{company}?mode=json"
@@ -82,7 +90,8 @@ class LeverConnector(BaseConnector):
             title=title,
             organizer=company.replace("-", " ").title(),
             location=location,
-            country="Global" if remote_type == "remote" else (job.get("country") or None),
+            country=infer_country(location)
+            or ("Global" if remote_type == "remote" else (job.get("country") or None)),
             remote_type=remote_type,
             experience_level=experience,
             apply_url=url,

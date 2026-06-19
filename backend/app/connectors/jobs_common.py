@@ -38,3 +38,22 @@ def classify_experience(title: str) -> str:
 
 def extract_skill_tags(title: str) -> list[str]:
     return [kw for kw in _SKILL_KEYWORDS if kw.lower() in title.lower()][:5]
+
+
+_INDIA_KEYWORDS = (
+    "india", "bengaluru", "bangalore", "mumbai", "delhi", "hyderabad", "pune",
+    "chennai", "gurgaon", "gurugram", "noida", "kolkata", "ahmedabad",
+)
+
+
+def infer_country(location: str | None) -> str | None:
+    """Best-effort country from a free-text job location, so India-based roles
+    (from any company board) are tagged for Indian students."""
+    if not location:
+        return None
+    loc = location.lower()
+    if any(k in loc for k in _INDIA_KEYWORDS):
+        return "India"
+    if "remote" in loc or "anywhere" in loc:
+        return "Global"
+    return None
