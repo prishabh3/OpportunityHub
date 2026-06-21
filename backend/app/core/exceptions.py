@@ -69,13 +69,17 @@ def problem_response(
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(_: Request, exc: AppError) -> JSONResponse:
-        return problem_response(
+        response = problem_response(
             status_code=exc.status_code,
             error_type=exc.error_type,
             title=exc.title,
             detail=exc.detail,
             **exc.extra,
         )
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            # RFC 7235 §3.1 requires WWW-Authenticate on every 401.
+            response.headers["WWW-Authenticate"] = 'Bearer realm="OpportunityHub"'
+        return response
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:

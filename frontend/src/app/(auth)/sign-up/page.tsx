@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 
 import { AuthForm } from "@/features/auth/components/auth-form";
 
-export const metadata: Metadata = { title: "Sign up — OpportunityHub" };
+export const metadata: Metadata = {
+  title: "Sign up — OpportunityHub",
+  robots: { index: false, follow: false },
+};
 
 export default async function SignUpPage({
   searchParams,

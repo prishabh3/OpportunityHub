@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { Navbar } from "@/components/layout/navbar";
 import { ProfileForm } from "@/features/profile/components/profile-form";
+import { MfaSection } from "@/features/auth/components/mfa-section";
 
 export const metadata: Metadata = { title: "Profile — OpportunityHub" };
 
@@ -17,6 +18,7 @@ export default function ProfilePage() {
           </p>
         </div>
         <ProfileForm />
+        <MfaSection />
       </main>
     </>
   );

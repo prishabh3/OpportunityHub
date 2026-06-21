@@ -9,6 +9,9 @@ from jwt import PyJWKClient
 
 from app.core.config import get_settings
 from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,7 +40,11 @@ class SupabaseJWTVerifier:
                 algorithms=["ES256", "RS256"],
                 audience=self._audience,
             )
+        except jwt.ExpiredSignatureError as exc:
+            logger.warning("jwt_expired")
+            raise UnauthorizedError("Token has expired") from exc
         except jwt.PyJWTError as exc:
+            logger.warning("jwt_invalid", error=repr(exc))
             raise UnauthorizedError("Invalid or expired token") from exc
 
         app_metadata = payload.get("app_metadata", {})
@@ -76,19 +83,25 @@ async def get_current_user(
 
 async def get_current_user_optional(
     authorization: Annotated[str | None, Header()] = None,
-    verifier: Annotated[SupabaseJWTVerifier, Depends(get_jwt_verifier)] = None,  # type: ignore[assignment]
 ) -> AuthenticatedUser | None:
+    """Best-effort auth: returns None for missing or invalid tokens instead of
+    raising, so public endpoints can serve both anonymous and logged-in users."""
     if not authorization:
         return None
-    token = extract_bearer_token(authorization)
-    return verifier.verify(token)
+    try:
+        token = extract_bearer_token(authorization)
+        return get_jwt_verifier().verify(token)
+    except (UnauthorizedError, ForbiddenError):
+        return None
 
 
 async def require_admin(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
 ) -> AuthenticatedUser:
     if user.role != "admin":
+        logger.warning("admin_access_denied", user_id=user.id)
         raise ForbiddenError("Admin role required")
+    logger.info("admin_access_granted", user_id=user.id)
     return user
 
 

@@ -22,7 +22,11 @@ export function UserMenu({ email, isAdmin = false }: { email: string; isAdmin?: 
   const initials = email.slice(0, 2).toUpperCase();
 
   async function signOut() {
-    await supabase.auth.signOut();
+    // scope: 'global' invalidates all refresh tokens for this user across every
+    // device and browser — not just the current session cookie.  This matters
+    // when a token is suspected stolen: the user can sign out here and the
+    // attacker's copy of the token becomes invalid at next refresh.
+    await supabase.auth.signOut({ scope: "global" });
     router.push("/");
     router.refresh();
   }

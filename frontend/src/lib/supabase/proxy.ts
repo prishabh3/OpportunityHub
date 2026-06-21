@@ -5,9 +5,9 @@ import { env } from "@/lib/env";
 const PROTECTED_PREFIXES = ["/dashboard", "/bookmarks", "/profile", "/notifications", "/admin"];
 
 /**
- * Refreshes the Supabase session cookie on every request and redirects
- * unauthenticated users away from protected routes. Invoked from
- * `src/proxy.ts` (the Next.js 16 successor to `middleware.ts`).
+ * Refreshes the Supabase session cookie on every request, redirects
+ * unauthenticated users away from protected routes, and enforces MFA
+ * (aal2) for users who have enrolled a TOTP factor.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -31,15 +31,29 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // getUser() validates the JWT with Supabase's server — unlike getSession()
+  // which only reads the cookie and trusts the local value without re-checking.
   const { data } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
+  // 1. Unauthenticated → redirect to sign-in.
   if (!data.user && isProtected) {
     const redirectUrl = new URL("/sign-in", request.url);
     redirectUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // 2. Authenticated + MFA enrolled but not yet verified in this session →
+  //    redirect to the MFA challenge page (except when already on that page).
+  if (data.user && pathname !== "/mfa-challenge") {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal?.currentLevel !== "aal2") {
+      const mfaUrl = new URL("/mfa-challenge", request.url);
+      mfaUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(mfaUrl);
+    }
   }
 
   return response;
