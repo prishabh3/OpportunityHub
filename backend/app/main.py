@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.core.rate_limit import RateLimitMiddleware
+from app.core.request_context import RequestContextMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 
 logger = get_logger(__name__)
@@ -50,9 +51,13 @@ def create_app() -> FastAPI:
     redis = Redis(connection_pool=get_redis_pool())
     app.add_middleware(RateLimitMiddleware, settings=settings, redis=redis)
 
-    # Security headers must be outermost so they are applied to every response
-    # including 4xx/5xx error responses produced by FastAPI's own middleware.
+    # Security headers added after rate limiting so they're applied to 429s too.
     app.add_middleware(SecurityHeadersMiddleware)
+
+    # Request context is added last → outermost → runs first, so the request_id
+    # and request metadata are bound before any other middleware (rate limiting,
+    # security headers) or handler emits a log line.
+    app.add_middleware(RequestContextMiddleware)
 
     register_exception_handlers(app)
 

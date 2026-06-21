@@ -4,7 +4,20 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 PROBLEM_BASE_URL = "https://opportunityhub.dev/errors"
+
+# 4xx statuses that are security-relevant and worth surfacing for monitoring
+# (auth/authorization failures, throttling). Bound request context (request_id,
+# path, client_ip) is attached automatically by RequestContextMiddleware.
+_SECURITY_RELEVANT_STATUSES = {
+    status.HTTP_401_UNAUTHORIZED,
+    status.HTTP_403_FORBIDDEN,
+    status.HTTP_429_TOO_MANY_REQUESTS,
+}
 
 
 class AppError(Exception):
@@ -69,6 +82,16 @@ def problem_response(
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(_: Request, exc: AppError) -> JSONResponse:
+        if exc.status_code in _SECURITY_RELEVANT_STATUSES:
+            # Auth/authorization/throttle failures — log for security monitoring.
+            logger.warning(
+                "security_event",
+                error_type=exc.error_type,
+                status_code=exc.status_code,
+                detail=exc.detail,
+            )
+        elif exc.status_code >= status.HTTP_500_INTERNAL_SERVER_ERROR:
+            logger.error("app_error", error_type=exc.error_type, exc_info=exc)
         response = problem_response(
             status_code=exc.status_code,
             error_type=exc.error_type,
@@ -97,6 +120,10 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def handle_unexpected_error(_: Request, exc: Exception) -> JSONResponse:
+        # Log the full stack trace for diagnosis. The client only ever sees the
+        # generic message below — internal details (paths, query text, driver
+        # errors) are never leaked in the response body.
+        logger.error("unhandled_exception", exc_info=exc)
         return problem_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_type="internal-error",

@@ -11,6 +11,12 @@ import type { NextConfig } from "next";
  * Upgrade to a nonce-based strict-dynamic CSP when the team has bandwidth.
  */
 const securityHeaders = [
+  // Force HTTPS for two years incl. subdomains, and allow preload-list inclusion.
+  // Vercel already serves over HTTPS; this makes the browser refuse HTTP outright.
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
   // Prevent MIME-type sniffing.
   { key: "X-Content-Type-Options", value: "nosniff" },
   // Block framing (clickjacking). frame-ancestors in CSP covers modern browsers;
