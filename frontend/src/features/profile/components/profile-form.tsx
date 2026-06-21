@@ -3,6 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,22 +18,36 @@ import {
   updateProfile,
   type Profile,
   type ProfileUpdate,
-  type RemoteType,
 } from "@/features/profile/api";
 import { COUNTRY_SUGGESTIONS, SKILL_SUGGESTIONS } from "@/features/profile/constants";
 
-interface FormValues {
-  full_name: string;
-  preferred_role: string;
-  preferred_remote: RemoteType | "";
-  expected_graduation: string;
-  timezone: string;
-  weekly_digest_enabled: boolean;
-  countries: string[];
-  skills: string[];
-}
+const profileSchema = z.object({
+  full_name: z.string().max(100, "Max 100 characters"),
+  preferred_role: z.string().max(100, "Max 100 characters"),
+  preferred_remote: z.enum(["", "remote", "hybrid", "onsite", "unspecified"]),
+  expected_graduation: z
+    .string()
+    .refine((v) => v === "" || /^\d{4}-\d{2}-\d{2}$/.test(v), "Use YYYY-MM-DD format"),
+  timezone: z
+    .string()
+    .min(1, "Timezone is required")
+    .max(50, "Max 50 characters")
+    .refine((v) => {
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: v });
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Unknown timezone — use a name like UTC or Asia/Kolkata"),
+  weekly_digest_enabled: z.boolean(),
+  countries: z.array(z.string().max(100)).max(20, "Max 20 countries"),
+  skills: z.array(z.string().max(100)).max(50, "Max 50 skills"),
+});
 
-const emptyToNull = (value: string) => {
+type FormValues = z.infer<typeof profileSchema>;
+
+const emptyToNull = (value: string): string | null => {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 };
@@ -69,7 +85,8 @@ export function ProfileForm() {
     queryFn: getProfile,
   });
 
-  const { register, handleSubmit, reset, control, formState } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, formState, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(profileSchema),
     defaultValues: {
       full_name: "",
       preferred_role: "",
@@ -121,14 +138,15 @@ export function ProfileForm() {
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
       className="flex flex-col gap-6"
     >
-      <Field label="Full name" htmlFor="full_name">
-        <Input id="full_name" placeholder="Ada Lovelace" {...register("full_name")} />
+      <Field label="Full name" htmlFor="full_name" error={errors.full_name?.message}>
+        <Input id="full_name" placeholder="Ada Lovelace" aria-invalid={!!errors.full_name} {...register("full_name")} />
       </Field>
 
-      <Field label="Preferred role" htmlFor="preferred_role">
+      <Field label="Preferred role" htmlFor="preferred_role" error={errors.preferred_role?.message}>
         <Input
           id="preferred_role"
           placeholder="Software Engineer, ML Engineer…"
+          aria-invalid={!!errors.preferred_role}
           {...register("preferred_role")}
         />
       </Field>
@@ -183,8 +201,8 @@ export function ProfileForm() {
         <Input id="expected_graduation" type="date" {...register("expected_graduation")} />
       </Field>
 
-      <Field label="Timezone" htmlFor="timezone">
-        <Input id="timezone" placeholder="UTC, Asia/Kolkata…" {...register("timezone")} />
+      <Field label="Timezone" htmlFor="timezone" error={errors.timezone?.message}>
+        <Input id="timezone" placeholder="UTC, Asia/Kolkata…" aria-invalid={!!errors.timezone} {...register("timezone")} />
       </Field>
 
       <label className="flex items-center gap-2 text-sm">
@@ -208,18 +226,24 @@ function Field({
   label,
   htmlFor,
   hint,
+  error,
   children,
 }: {
   label: string;
   htmlFor: string;
   hint?: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }

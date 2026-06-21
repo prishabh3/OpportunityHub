@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -17,7 +18,7 @@ async def list_bookmarks(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    cursor: str | None = None,
+    cursor: Annotated[str | None, Query(max_length=200)] = None,
 ) -> Page[BookmarkRead]:
     return await BookmarkService(session).list_page(user, limit, cursor)
 
@@ -42,8 +43,8 @@ async def add_bookmark(
 
 @router.delete("/bookmarks/{opportunity_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_bookmark(
-    opportunity_id: str,
+    opportunity_id: uuid.UUID,
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> None:
-    await BookmarkService(session).remove(user, opportunity_id)
+    await BookmarkService(session).remove(user, str(opportunity_id))

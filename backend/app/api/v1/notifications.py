@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -43,11 +44,11 @@ async def mark_all_read(
 
 @router.post("/notifications/{notification_id}/read", status_code=status.HTTP_204_NO_CONTENT)
 async def mark_read(
-    notification_id: str,
+    notification_id: uuid.UUID,
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> None:
-    await NotificationService(session).mark_read(user, notification_id)
+    await NotificationService(session).mark_read(user, str(notification_id))
 
 
 @router.post("/notifications/run", dependencies=[Depends(verify_job_token)])

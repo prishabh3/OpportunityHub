@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.application.dtos.opportunity import (
     DifficultyLevel,
@@ -16,6 +16,7 @@ from app.application.dtos.opportunity import (
     OpportunityType,
     RemoteType,
 )
+from app.core.validators import validate_url_scheme
 
 
 class SourceMeta(BaseModel):
@@ -45,6 +46,13 @@ class NormalizedOpportunity(BaseModel):
     source_url: str | None = None
     tags: list[str] = Field(default_factory=list)
     details: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("apply_url", "source_url", "banner_url", mode="before")
+    @classmethod
+    def _validate_url_scheme(cls, v: object) -> object:
+        if isinstance(v, str):
+            validate_url_scheme(v)
+        return v
 
     def content_hash(self) -> str:
         """Stable hash of the meaningful fields, used to detect changes on

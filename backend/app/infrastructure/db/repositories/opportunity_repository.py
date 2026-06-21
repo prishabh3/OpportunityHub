@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 from app.application.dtos.opportunity import OpportunityFilters
+from app.core.validators import escape_like
 from app.infrastructure.db.models.opportunity import Opportunity, Tag
 
 
@@ -31,12 +32,16 @@ class OpportunityRepository:
         if f.experience_level:
             stmt = stmt.where(Opportunity.experience_level == f.experience_level)
         if f.q:
-            like = f"%{f.q}%"
+            # Escape LIKE wildcards (%, _, \) before building the pattern so
+            # user input is treated as a literal substring, not a LIKE pattern.
+            # Without this, a query containing "%" matches every row and causes
+            # a catastrophically expensive full-table scan (algorithmic DoS).
+            like = f"%{escape_like(f.q)}%"
             stmt = stmt.where(
                 or_(
-                    Opportunity.title.ilike(like),
-                    Opportunity.organizer.ilike(like),
-                    Opportunity.description.ilike(like),
+                    Opportunity.title.ilike(like, escape="\\"),
+                    Opportunity.organizer.ilike(like, escape="\\"),
+                    Opportunity.description.ilike(like, escape="\\"),
                 )
             )
         if f.tag:

@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
@@ -33,14 +34,14 @@ async def list_opportunities(
     category: Category | None = None,
     type: OpportunityType | None = None,
     status: OpportunityStatus | None = None,
-    country: str | None = None,
+    country: Annotated[str | None, Query(max_length=100)] = None,
     remote_type: RemoteType | None = None,
     difficulty: DifficultyLevel | None = None,
     experience_level: ExperienceLevel | None = None,
-    q: str | None = None,
-    tag: str | None = None,
+    q: Annotated[str | None, Query(max_length=200)] = None,
+    tag: Annotated[str | None, Query(max_length=50)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    cursor: str | None = None,
+    cursor: Annotated[str | None, Query(max_length=200)] = None,
 ) -> Page[OpportunitySummary]:
     """Public, filterable, cursor-paginated list of opportunities.
 
@@ -62,7 +63,7 @@ async def list_opportunities(
 
 @router.get("/opportunities/{opportunity_id}", response_model=OpportunityDetail)
 async def get_opportunity(
-    opportunity_id: str,
+    opportunity_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> OpportunityDetail:
-    return await OpportunityService(session).get(opportunity_id)
+    return await OpportunityService(session).get(str(opportunity_id))

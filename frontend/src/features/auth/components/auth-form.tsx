@@ -15,8 +15,9 @@ import { createClient } from "@/lib/supabase/client";
 type Mode = "sign-in" | "sign-up";
 
 const schema = z.object({
-  email: z.string().email("Enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.string().email("Enter a valid email address").max(254, "Email too long"),
+  // 72-char cap: bcrypt silently truncates beyond 72 bytes; validate before sending.
+  password: z.string().min(8, "Password must be at least 8 characters").max(72, "Password too long"),
 });
 
 type FormValues = z.infer<typeof schema>;

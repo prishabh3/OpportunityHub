@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.core.validators import sanitize_text
 
 OpportunityType = Literal[
     "hackathon", "internship", "full_time_job", "research_program", "competition"
@@ -62,3 +64,24 @@ class OpportunityFilters(BaseModel):
     experience_level: ExperienceLevel | None = None
     q: str | None = None
     tag: str | None = None
+
+    @field_validator("q", mode="before")
+    @classmethod
+    def _sanitize_q(cls, v: object) -> object:
+        if isinstance(v, str):
+            return sanitize_text(v, max_length=200)
+        return v
+
+    @field_validator("country", mode="before")
+    @classmethod
+    def _sanitize_country(cls, v: object) -> object:
+        if isinstance(v, str):
+            return sanitize_text(v, max_length=100)
+        return v
+
+    @field_validator("tag", mode="before")
+    @classmethod
+    def _sanitize_tag(cls, v: object) -> object:
+        if isinstance(v, str):
+            return sanitize_text(v, max_length=50)
+        return v

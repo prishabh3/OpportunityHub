@@ -39,6 +39,7 @@ export function SearchView({
           autoFocus
           className="h-12 pl-11 text-base"
           placeholder="Search opportunities — try 'AI', 'Google', 'open source'…"
+          maxLength={200}
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />

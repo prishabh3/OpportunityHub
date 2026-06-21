@@ -121,6 +121,7 @@ export function OpportunityList({
           <Input
             className="h-9 pl-8"
             placeholder="Search opportunities…"
+            maxLength={200}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />

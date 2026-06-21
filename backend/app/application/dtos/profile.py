@@ -1,7 +1,9 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.core.validators import sanitize_list, sanitize_text, validate_timezone
 
 RemoteType = Literal["remote", "hybrid", "onsite", "unspecified"]
 
@@ -35,3 +37,40 @@ class ProfileUpdate(BaseModel):
     weekly_digest_enabled: bool | None = None
     timezone: str | None = None
     skills: list[str] | None = None
+
+    @field_validator("full_name", "preferred_role", mode="before")
+    @classmethod
+    def _sanitize_text_field(cls, v: object) -> object:
+        if isinstance(v, str):
+            return sanitize_text(v, max_length=100)
+        return v
+
+    @field_validator("timezone", mode="before")
+    @classmethod
+    def _validate_timezone(cls, v: object) -> object:
+        if isinstance(v, str) and v:
+            validate_timezone(v)
+            if len(v) > 50:
+                raise ValueError("Timezone identifier exceeds 50 characters")
+        return v
+
+    @field_validator("preferred_companies", mode="before")
+    @classmethod
+    def _sanitize_companies(cls, v: object) -> object:
+        if isinstance(v, list):
+            return sanitize_list(v, max_items=50, max_item_length=100)
+        return v
+
+    @field_validator("preferred_countries", mode="before")
+    @classmethod
+    def _sanitize_countries(cls, v: object) -> object:
+        if isinstance(v, list):
+            return sanitize_list(v, max_items=20, max_item_length=100)
+        return v
+
+    @field_validator("skills", mode="before")
+    @classmethod
+    def _sanitize_skills(cls, v: object) -> object:
+        if isinstance(v, list):
+            return sanitize_list(v, max_items=50, max_item_length=100)
+        return v
