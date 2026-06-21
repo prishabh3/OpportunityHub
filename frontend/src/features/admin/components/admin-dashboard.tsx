@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Radio, Eye, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,8 @@ import {
   getAnalytics,
   getConnectorRuns,
   getSources,
+  getTrafficStats,
+  getUsers,
   triggerIngest,
 } from "@/features/admin/api";
 
@@ -36,6 +38,12 @@ export function AdminDashboard() {
   const analytics = useQuery({ queryKey: ["admin", "analytics"], queryFn: getAnalytics });
   const sources = useQuery({ queryKey: ["admin", "sources"], queryFn: getSources });
   const runs = useQuery({ queryKey: ["admin", "runs"], queryFn: getConnectorRuns });
+  const traffic = useQuery({
+    queryKey: ["admin", "traffic"],
+    queryFn: getTrafficStats,
+    refetchInterval: 30_000,
+  });
+  const users = useQuery({ queryKey: ["admin", "users"], queryFn: getUsers });
 
   const ingest = useMutation({
     mutationFn: triggerIngest,
@@ -51,6 +59,7 @@ export function AdminDashboard() {
   }
 
   const a = analytics.data;
+  const t = traffic.data;
 
   return (
     <div className="flex flex-col gap-8">
@@ -70,6 +79,34 @@ export function AdminDashboard() {
           <Stat label="Notifications" value={a.notifications_total} />
         </div>
       )}
+
+      {/* Live traffic */}
+      <section>
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Live traffic</h3>
+        <div className="grid gap-3 grid-cols-3">
+          <Card className="flex items-center gap-3 p-4">
+            <Radio className="size-5 text-green-500 shrink-0" />
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Active now</p>
+              <p className="text-2xl font-semibold">{t?.active_now ?? "—"}</p>
+            </div>
+          </Card>
+          <Card className="flex items-center gap-3 p-4">
+            <Eye className="size-5 text-indigo-500 shrink-0" />
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Page views</p>
+              <p className="text-2xl font-semibold">{t?.pageviews?.toLocaleString() ?? "—"}</p>
+            </div>
+          </Card>
+          <Card className="flex items-center gap-3 p-4">
+            <Users className="size-5 text-violet-500 shrink-0" />
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Unique visitors</p>
+              <p className="text-2xl font-semibold">{t?.unique_visitors?.toLocaleString() ?? "—"}</p>
+            </div>
+          </Card>
+        </div>
+      </section>
 
       {a && (
         <section>
@@ -91,6 +128,32 @@ export function AdminDashboard() {
             <div key={s.key} className="flex items-center justify-between px-4 py-2.5 text-sm">
               <span className="font-medium">{s.display_name}</span>
               <span className="text-muted-foreground">{s.opportunity_count} opportunities</span>
+            </div>
+          ))}
+        </Card>
+      </section>
+
+      {/* Users table */}
+      <section>
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+          Users ({users.data?.length ?? "…"})
+        </h3>
+        <Card className="divide-y p-0">
+          {users.isLoading && <p className="px-4 py-3 text-sm text-muted-foreground">Loading…</p>}
+          {users.data?.length === 0 && (
+            <p className="px-4 py-3 text-sm text-muted-foreground">No users yet.</p>
+          )}
+          {users.data?.map((u) => (
+            <div key={u.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+              <span className="flex items-center gap-2">
+                {u.role === "admin" && (
+                  <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400">admin</Badge>
+                )}
+                <span className="font-medium">{u.full_name || <span className="text-muted-foreground italic">unnamed</span>}</span>
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Joined {new Date(u.created_at).toLocaleDateString()}
+              </span>
             </div>
           ))}
         </Card>

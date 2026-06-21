@@ -13,12 +13,38 @@ from app.connectors.jobs_common import (
 
 # Verified public Greenhouse job boards. Unknown/blocked ones are skipped at runtime.
 COMPANIES: list[str] = [
-    "stripe", "databricks", "gitlab", "figma", "anthropic", "discord", "reddit",
-    "coinbase", "robinhood", "ramp", "airbnb", "dropbox", "asana", "instacart",
-    "lyft", "pinterest", "twitch", "datadog", "mongodb", "elastic", "twilio",
-    "affirm", "brex", "gusto", "samsara", "faire", "chime", "nuro", "waymo",
+    "stripe",
+    "databricks",
+    "gitlab",
+    "figma",
+    "anthropic",
+    "discord",
+    "reddit",
+    "coinbase",
+    "robinhood",
+    "ramp",
+    "airbnb",
+    "dropbox",
+    "asana",
+    "instacart",
+    "lyft",
+    "pinterest",
+    "twitch",
+    "datadog",
+    "mongodb",
+    "elastic",
+    "twilio",
+    "affirm",
+    "brex",
+    "gusto",
+    "samsara",
+    "faire",
+    "chime",
+    "nuro",
+    "waymo",
     # Indian company boards
-    "postman", "phonepe",
+    "postman",
+    "phonepe",
 ]
 
 _BOARD = "https://boards-api.greenhouse.io/v1/boards/{company}/jobs"

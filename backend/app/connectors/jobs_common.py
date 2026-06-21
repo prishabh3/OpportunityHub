@@ -12,9 +12,28 @@ TECH_RE = re.compile(
 )
 
 _SKILL_KEYWORDS = [
-    "Python", "Java", "JavaScript", "TypeScript", "Go", "Rust", "C++", "React",
-    "Machine Learning", "AI", "Data", "Backend", "Frontend", "Full Stack", "DevOps",
-    "Security", "Cloud", "Mobile", "iOS", "Android", "Infrastructure", "Platform",
+    "Python",
+    "Java",
+    "JavaScript",
+    "TypeScript",
+    "Go",
+    "Rust",
+    "C++",
+    "React",
+    "Machine Learning",
+    "AI",
+    "Data",
+    "Backend",
+    "Frontend",
+    "Full Stack",
+    "DevOps",
+    "Security",
+    "Cloud",
+    "Mobile",
+    "iOS",
+    "Android",
+    "Infrastructure",
+    "Platform",
 ]
 
 

@@ -49,9 +49,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         except RedisError as exc:
             # Fail open: a Redis outage must not take the whole API down. We log
             # the actual error and let the request through.
-            logger.warning(
-                "rate_limit_redis_unavailable", path=request.url.path, error=repr(exc)
-            )
+            logger.warning("rate_limit_redis_unavailable", path=request.url.path, error=repr(exc))
             return await call_next(request)
 
         remaining = max(limit - current, 0)

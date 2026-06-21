@@ -1,11 +1,19 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dtos.admin import AdminAnalytics, ConnectorRunRead, SourceStat
+from app.application.dtos.admin import (
+    AdminAnalytics,
+    ConnectorRunRead,
+    SourceStat,
+    TrafficStats,
+    UserRead,
+)
 from app.application.services.admin_service import AdminService
 from app.connectors.service import run_all
+from app.core.cache import get_redis
 from app.core.security import AuthenticatedUser, require_admin
 from app.infrastructure.db.session import get_db_session
 
@@ -45,3 +53,19 @@ async def trigger_ingest(
     cron/token endpoint."""
     results = await run_all(session)
     return {"results": [r.model_dump() for r in results]}
+
+
+@router.get("/traffic", response_model=TrafficStats)
+async def traffic_stats(
+    _: Annotated[AuthenticatedUser, Depends(require_admin)],
+    redis: Annotated[Redis, Depends(get_redis)],
+) -> TrafficStats:
+    return await AdminService.get_traffic(redis)
+
+
+@router.get("/users", response_model=list[UserRead])
+async def list_users(
+    _: Annotated[AuthenticatedUser, Depends(require_admin)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[UserRead]:
+    return await AdminService(session).get_users()

@@ -24,9 +24,7 @@ class BookmarkService:
     ) -> Page[BookmarkRead]:
         decoded = decode_cursor(cursor) if cursor else None
         rows, has_more = await self._repo.list_page(user.id, limit, decoded)
-        next_cursor = (
-            encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
-        )
+        next_cursor = encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
         return Page(
             data=[self._to_read(b) for b in rows],
             page=PageMeta(next_cursor=next_cursor, has_more=has_more, limit=limit),

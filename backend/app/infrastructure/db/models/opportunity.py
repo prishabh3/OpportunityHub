@@ -95,9 +95,7 @@ class Opportunity(Base):
     country: Mapped[str | None]
     remote_type: Mapped[str] = mapped_column(remote_type, server_default="unspecified")
     difficulty: Mapped[str] = mapped_column(difficulty_level, server_default="unspecified")
-    experience_level: Mapped[str] = mapped_column(
-        experience_level, server_default="unspecified"
-    )
+    experience_level: Mapped[str] = mapped_column(experience_level, server_default="unspecified")
 
     posted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     deadline_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))

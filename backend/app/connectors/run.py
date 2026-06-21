@@ -14,8 +14,7 @@ async def _main(only: str | None) -> None:
     for r in results:
         print(
             f"[{r.source}] found={r.found} created={r.created} updated={r.updated} "
-            f"skipped={r.skipped} failed={r.failed}"
-            + (f" error={r.error}" if r.error else "")
+            f"skipped={r.skipped} failed={r.failed}" + (f" error={r.error}" if r.error else "")
         )
 
 

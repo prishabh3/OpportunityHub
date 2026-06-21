@@ -80,9 +80,7 @@ async def _apply_fields(opp: Opportunity, item: NormalizedOpportunity, content_h
 async def _sync_tags(
     session: AsyncSession, opp: Opportunity, names: list[str], cache: dict[str, Tag]
 ) -> None:
-    await session.execute(
-        delete(OpportunityTag).where(OpportunityTag.opportunity_id == opp.id)
-    )
+    await session.execute(delete(OpportunityTag).where(OpportunityTag.opportunity_id == opp.id))
     seen: set[str] = set()
     for name in names:
         clean = name.strip()

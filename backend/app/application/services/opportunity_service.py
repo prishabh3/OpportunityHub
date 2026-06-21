@@ -23,9 +23,7 @@ class OpportunityService:
         decoded = decode_cursor(cursor) if cursor else None
         rows, has_more = await self._repo.list_page(filters, limit, decoded)
 
-        next_cursor = (
-            encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
-        )
+        next_cursor = encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
         return Page(
             data=[self._to_summary(o) for o in rows],
             page=PageMeta(next_cursor=next_cursor, has_more=has_more, limit=limit),

@@ -23,9 +23,7 @@ class NotificationService:
     ) -> Page[NotificationRead]:
         decoded = decode_cursor(cursor) if cursor else None
         rows, has_more = await self._repo.list_page(user.id, limit, decoded)
-        next_cursor = (
-            encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
-        )
+        next_cursor = encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
         return Page(
             data=[NotificationRead.model_validate(n) for n in rows],
             page=PageMeta(next_cursor=next_cursor, has_more=has_more, limit=limit),
@@ -90,9 +88,7 @@ async def generate_deadline_reminders(session: AsyncSession) -> int:
                 sent_at=now,
             )
         )
-        session.add(
-            DeadlineReminderSent(user_id=user_id, opportunity_id=opp.id, event=event)
-        )
+        session.add(DeadlineReminderSent(user_id=user_id, opportunity_id=opp.id, event=event))
         created += 1
 
     await session.commit()

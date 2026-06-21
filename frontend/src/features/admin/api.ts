@@ -27,9 +27,24 @@ export interface ConnectorRun {
   error_message: string | null;
 }
 
+export interface TrafficStats {
+  active_now: number;
+  pageviews: number;
+  unique_visitors: number;
+}
+
+export interface UserRead {
+  id: string;
+  full_name: string | null;
+  role: string;
+  created_at: string;
+}
+
 export const getAnalytics = () => apiClient.get<AdminAnalytics>("/api/v1/admin/analytics");
 export const getSources = () => apiClient.get<SourceStat[]>("/api/v1/admin/sources");
 export const getConnectorRuns = () =>
   apiClient.get<ConnectorRun[]>("/api/v1/admin/connector-runs");
 export const triggerIngest = () =>
   apiClient.post<{ results: unknown[] }>("/api/v1/admin/ingest/run");
+export const getTrafficStats = () => apiClient.get<TrafficStats>("/api/v1/admin/traffic");
+export const getUsers = () => apiClient.get<UserRead[]>("/api/v1/admin/users");

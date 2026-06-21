@@ -334,9 +334,7 @@ async def seed() -> None:
 
             for tag_name in item["tags"]:
                 tag = await _get_or_create_tag(session, tag_name)
-                session.add(
-                    OpportunityTag(opportunity_id=opportunity.id, tag_id=tag.id)
-                )
+                session.add(OpportunityTag(opportunity_id=opportunity.id, tag_id=tag.id))
             created += 1
 
         await session.commit()

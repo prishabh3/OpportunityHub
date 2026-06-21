@@ -44,9 +44,7 @@ class BookmarkRepository:
     async def add(
         self, user_id: str, opportunity_id: str, notes: str | None, tags: list[str]
     ) -> Bookmark:
-        bookmark = Bookmark(
-            user_id=user_id, opportunity_id=opportunity_id, notes=notes, tags=tags
-        )
+        bookmark = Bookmark(user_id=user_id, opportunity_id=opportunity_id, notes=notes, tags=tags)
         self._session.add(bookmark)
         await self._session.flush()
         await self._session.refresh(bookmark)

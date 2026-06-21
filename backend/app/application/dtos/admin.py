@@ -28,3 +28,16 @@ class ConnectorRunRead(BaseModel):
     items_updated: int
     items_failed: int
     error_message: str | None = None
+
+
+class TrafficStats(BaseModel):
+    active_now: int
+    pageviews: int
+    unique_visitors: int
+
+
+class UserRead(BaseModel):
+    id: str
+    full_name: str | None
+    role: str
+    created_at: datetime

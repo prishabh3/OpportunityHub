@@ -1,7 +1,15 @@
+from redis.asyncio import Redis
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dtos.admin import AdminAnalytics, ConnectorRunRead, SourceStat
+from app.application.dtos.admin import (
+    AdminAnalytics,
+    ConnectorRunRead,
+    SourceStat,
+    TrafficStats,
+    UserRead,
+)
+from app.application.services.traffic_service import get_stats
 from app.infrastructure.db.models.bookmark import Bookmark
 from app.infrastructure.db.models.connector_run import ConnectorRun
 from app.infrastructure.db.models.notification import Notification
@@ -63,3 +71,19 @@ class AdminService:
             )
             for run, key in rows.all()
         ]
+
+    async def get_users(self, limit: int = 100) -> list[UserRead]:
+        rows = await self._session.execute(
+            select(Profile.id, Profile.full_name, Profile.role, Profile.created_at)
+            .order_by(Profile.created_at.desc())
+            .limit(limit)
+        )
+        return [
+            UserRead(id=r.id, full_name=r.full_name, role=r.role, created_at=r.created_at)
+            for r in rows.all()
+        ]
+
+    @staticmethod
+    async def get_traffic(redis: Redis) -> TrafficStats:
+        stats = await get_stats(redis)
+        return TrafficStats(**stats)
