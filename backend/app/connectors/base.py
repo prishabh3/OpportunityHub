@@ -51,7 +51,9 @@ class NormalizedOpportunity(BaseModel):
     @classmethod
     def _validate_url_scheme(cls, v: object) -> object:
         if isinstance(v, str):
-            validate_url_scheme(v)
+            # Returns the sanitized/normalized value (e.g. //host → https://host)
+            # and raises on dangerous schemes (javascript:, data:, …).
+            return validate_url_scheme(v)
         return v
 
     def content_hash(self) -> str:

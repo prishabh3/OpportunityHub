@@ -93,13 +93,32 @@ def validate_url_scheme(
     *,
     allowed: tuple[str, ...] = ("https", "http"),
 ) -> str | None:
-    """Reject non-HTTP(S) URLs such as ``javascript:``, ``data:``, ``file:``."""
+    """Sanitize a URL for safe use in an ``<a href>``.
+
+    The security goal is to reject dangerous schemes (``javascript:``, ``data:``,
+    ``vbscript:``, ``file:``) that would execute when a user clicks an ingested
+    link.  It is deliberately *tolerant* of incomplete-but-harmless URLs so that
+    ingestion of otherwise-valid opportunities never crashes:
+
+    - ``None`` → ``None``
+    - protocol-relative ``//host/path`` → normalized to ``https://host/path``
+    - relative paths (empty scheme, e.g. ``/jobs/123``) → passed through; these
+      navigate within the site and are not a script-injection vector
+    - an explicit scheme outside ``allowed`` → rejected (blocks ``javascript:`` etc.)
+    """
     if value is None:
         return None
-    scheme = urlparse(value).scheme.lower()
-    if scheme not in allowed:
+    # Strip control chars / whitespace first: browsers ignore embedded tabs and
+    # newlines, so "java\tscript:alert(1)" would otherwise sneak past urlparse.
+    cleaned = strip_control_chars(value).strip()
+    if not cleaned:
+        return cleaned
+    if cleaned.startswith("//"):
+        cleaned = f"https:{cleaned}"
+    scheme = urlparse(cleaned).scheme.lower()
+    if scheme and scheme not in allowed:
         raise ValueError(f"URL must use one of {allowed!r} (got {scheme!r})")
-    return value
+    return cleaned
 
 
 # ------------------------------------------------------------------
