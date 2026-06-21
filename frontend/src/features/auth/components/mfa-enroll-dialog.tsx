@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -74,10 +73,14 @@ export function MfaEnrollDialog({ enrolledFactor, onChanged }: Props) {
       toast.error("Invalid code — please try again.");
       return;
     }
-    toast.success("Two-factor authentication enabled.");
-    setOpen(false);
+    // Clear factorId BEFORE closing so handleOpenChange doesn't mistake the
+    // just-verified factor for a pending one and try to unenroll it.
+    setFactorId(null);
+    setChallengeId(null);
     setQrSvg(null);
+    setOpen(false);
     reset();
+    toast.success("Two-factor authentication enabled.");
     onChanged();
   }
 
@@ -94,6 +97,12 @@ export function MfaEnrollDialog({ enrolledFactor, onChanged }: Props) {
 
   function handleOpenChange(next: boolean) {
     if (!next) {
+      // If factorId is still set the user cancelled before completing enrollment.
+      // Clean up the pending (unverified) factor so it doesn't accumulate in
+      // the user's Supabase MFA factor list across repeated open/close cycles.
+      if (factorId) {
+        supabase.auth.mfa.unenroll({ factorId }).catch(() => {});
+      }
       setQrSvg(null);
       setFactorId(null);
       setChallengeId(null);
@@ -150,13 +159,14 @@ export function MfaEnrollDialog({ enrolledFactor, onChanged }: Props) {
             {qrSvg ? (
               <>
                 <div className="flex justify-center rounded-lg border bg-white p-3">
-                  {/* The QR code is an SVG string from Supabase — safe to render as an image */}
-                  <Image
+                  {/* Plain <img> — Next.js <Image> blocks data: URIs even with
+                      unoptimized. The SVG source is from Supabase (trusted). */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={`data:image/svg+xml;utf8,${encodeURIComponent(qrSvg)}`}
                     alt="MFA QR code"
                     width={180}
                     height={180}
-                    unoptimized
                   />
                 </div>
 

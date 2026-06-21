@@ -44,7 +44,11 @@ export function MfaChallengeForm({ next = "/" }: { next?: string }) {
       setChallengeId(data.id);
     }
     startChallenge();
-  }, [supabase]);
+    // Empty deps: run once on mount. `supabase` is a new object reference on every
+    // render, so including it would re-run this effect after every setFactorId /
+    // setChallengeId state update, creating duplicate challenge() calls.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onSubmit({ code }: FormValues) {
     if (!factorId || !challengeId) {

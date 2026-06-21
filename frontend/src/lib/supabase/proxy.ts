@@ -45,9 +45,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // 2. Authenticated + MFA enrolled but not yet verified in this session →
-  //    redirect to the MFA challenge page (except when already on that page).
-  if (data.user && pathname !== "/mfa-challenge") {
+  // 2. Authenticated + on a protected route + MFA enrolled but not yet verified →
+  //    redirect to the MFA challenge page.
+  //    Only check protected routes: avoids an extra Supabase round-trip on every
+  //    public page (homepage, /opportunities, etc.) for logged-in users.
+  if (data.user && isProtected) {
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (aal?.nextLevel === "aal2" && aal?.currentLevel !== "aal2") {
       const mfaUrl = new URL("/mfa-challenge", request.url);
