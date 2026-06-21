@@ -96,10 +96,17 @@ class Settings(BaseSettings):
     llm_api_key: str | None = Field(default=None)
     embedding_model: str = Field(default="text-embedding-3-small")
 
-    # Rate limiting
+    # Rate limiting — global per-identity budget (fixed window, RateLimitMiddleware)
     rate_limit_anonymous_per_minute: int = Field(default=60)
     rate_limit_authenticated_per_minute: int = Field(default=300)
     rate_limit_admin_per_minute: int = Field(default=1000)
+
+    # Rate limiting — stricter per-route budgets (sliding window, RateLimiter dependency).
+    # These layer *under* the global budget to protect specific expensive/abusable
+    # routes from scraping, spam, and DoS regardless of the global tier.
+    rate_limit_search_per_minute: int = Field(default=30)
+    rate_limit_write_per_minute: int = Field(default=40)
+    rate_limit_ping_per_minute: int = Field(default=20)
 
     @property
     def supabase_jwks_url(self) -> str:

@@ -6,6 +6,8 @@ from redis.asyncio import Redis
 
 from app.application.services.traffic_service import record_ping
 from app.core.cache import get_redis
+from app.core.config import get_settings
+from app.core.rate_limit import RateLimiter
 
 router = APIRouter(prefix="/traffic", tags=["traffic"])
 
@@ -14,8 +16,14 @@ router = APIRouter(prefix="/traffic", tags=["traffic"])
 # or log-spam via crafted visitor IDs.
 _VISITOR_ID_RE = re.compile(r"^[0-9a-f\-]{1,36}$", re.IGNORECASE)
 
+# Public, unauthenticated endpoint — cap pings per IP so the visitor counters
+# can't be inflated or used to hammer Redis.
+_ping_limiter = RateLimiter(
+    times=get_settings().rate_limit_ping_per_minute, scope="traffic-ping"
+)
 
-@router.post("/ping", status_code=204)
+
+@router.post("/ping", status_code=204, dependencies=[Depends(_ping_limiter)])
 async def ping(
     request: Request,
     redis: Annotated[Redis, Depends(get_redis)],

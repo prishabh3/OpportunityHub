@@ -1,11 +1,14 @@
 import time
+from typing import Annotated
+from uuid import uuid4
 
-from fastapi import Request, Response
+from fastapi import Depends, Request, Response
 from redis import RedisError
 from redis.asyncio import Redis
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
 
+from app.core.cache import get_redis
 from app.core.config import Settings
 from app.core.exceptions import RateLimitedError, problem_response
 from app.core.logging import get_logger
@@ -14,6 +17,84 @@ from app.core.security import extract_bearer_token, get_jwt_verifier
 logger = get_logger(__name__)
 
 WINDOW_SECONDS = 60
+
+
+def resolve_identity(request: Request) -> str:
+    """Identify the caller for rate-limiting: by verified user id when a valid
+    bearer token is present, otherwise by client IP. Shared by the global
+    middleware and the per-route limiter so both bucket the same caller
+    consistently (a logged-in abuser can't dodge limits by their IP rotating)."""
+    authorization = request.headers.get("authorization")
+    if authorization:
+        try:
+            user = get_jwt_verifier().verify(extract_bearer_token(authorization))
+            return f"user:{user.id}"
+        except Exception:
+            pass  # fall through to IP for invalid/expired tokens
+    client_ip = request.client.host if request.client else "unknown"
+    return f"ip:{client_ip}"
+
+
+class RateLimiter:
+    """Per-route sliding-window rate limiter (Redis sorted-set log).
+
+    Use as a FastAPI dependency on sensitive routes::
+
+        @router.get("/search", dependencies=[Depends(RateLimiter(times=30, scope="search"))])
+
+    Unlike the global :class:`RateLimitMiddleware` (a coarse fixed-window budget),
+    this uses a true sliding window — no boundary-burst weakness — and applies a
+    tight, route-specific budget. It raises :class:`RateLimitedError`, which the
+    app's exception handler renders as RFC 9457 problem+json (dependencies run
+    inside the app, so handlers see the exception — unlike middleware).
+
+    Fails open on Redis errors: an outage must not take the route down.
+    """
+
+    def __init__(self, *, times: int, scope: str, window_seconds: int = WINDOW_SECONDS) -> None:
+        self._times = times
+        self._scope = scope
+        self._window = window_seconds
+
+    async def __call__(
+        self, request: Request, redis: Annotated[Redis, Depends(get_redis)]
+    ) -> None:
+        identity = resolve_identity(request)
+        key = f"slidingrl:{self._scope}:{identity}"
+        now_ms = int(time.time() * 1000)
+        window_ms = self._window * 1000
+
+        try:
+            async with redis.pipeline(transaction=True) as pipe:
+                # Drop entries older than the window, record this request, count
+                # what remains, and refresh the TTL — atomically.
+                pipe.zremrangebyscore(key, 0, now_ms - window_ms)
+                pipe.zadd(key, {f"{now_ms}-{uuid4().hex}": now_ms})
+                pipe.zcard(key)
+                pipe.expire(key, self._window)
+                results = await pipe.execute()
+            count = int(results[2])
+        except RedisError as exc:
+            logger.warning(
+                "rate_limit_redis_unavailable", scope=self._scope, error=repr(exc)
+            )
+            return  # fail open
+
+        if count > self._times:
+            logger.warning(
+                "rate_limited",
+                scope=self._scope,
+                identity=identity,
+                path=request.url.path,
+                count=count,
+                limit=self._times,
+            )
+            raise RateLimitedError(
+                f"Rate limit of {self._times} requests per {self._window}s exceeded",
+                limit=self._times,
+                remaining=0,
+                reset=self._window,
+            )
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -56,6 +137,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         reset = WINDOW_SECONDS - (int(time.time()) % WINDOW_SECONDS)
 
         if current > limit:
+            logger.warning(
+                "rate_limited",
+                scope="global",
+                identity=identity,
+                path=request.url.path,
+                count=current,
+                limit=limit,
+            )
             error = RateLimitedError(
                 f"Rate limit of {limit} requests/minute exceeded",
                 limit=limit,

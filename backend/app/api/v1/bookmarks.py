@@ -7,10 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.dtos.bookmark import BookmarkCreate, BookmarkRead
 from app.application.dtos.pagination import Page
 from app.application.services.bookmark_service import BookmarkService
+from app.core.config import get_settings
+from app.core.rate_limit import RateLimiter
 from app.core.security import AuthenticatedUser, get_current_user
 from app.infrastructure.db.session import get_db_session
 
 router = APIRouter(tags=["bookmarks"])
+
+# Throttle writes per user to curb spam / scripted mass-bookmarking.
+_write_limiter = RateLimiter(
+    times=get_settings().rate_limit_write_per_minute, scope="bookmark-write"
+)
 
 
 @router.get("/bookmarks", response_model=Page[BookmarkRead])
@@ -32,7 +39,12 @@ async def list_bookmark_ids(
     return await BookmarkService(session).list_ids(user)
 
 
-@router.post("/bookmarks", response_model=BookmarkRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/bookmarks",
+    response_model=BookmarkRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(_write_limiter)],
+)
 async def add_bookmark(
     data: BookmarkCreate,
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
