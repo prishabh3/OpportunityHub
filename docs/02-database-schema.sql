@@ -340,7 +340,18 @@ alter table opportunity_matches enable row level security;
 alter table search_history enable row level security;
 alter table calendar_sync_tokens enable row level security;
 
--- opportunities/sources/tags are public read, write only via service role (backend)
+-- Reference, connector and derived tables: RLS on with no policies, so they are
+-- unreachable over PostgREST (anon/authenticated). The backend reaches them as
+-- the postgres role, which bypasses RLS.
+alter table skills enable row level security;
+alter table user_skills enable row level security;
+alter table sources enable row level security;
+alter table connector_runs enable row level security;
+alter table tags enable row level security;
+alter table opportunity_tags enable row level security;
+alter table deadline_reminders_sent enable row level security;
+
+-- opportunities is public read; writes go through the backend only
 alter table opportunities enable row level security;
 create policy "opportunities_public_read" on opportunities
   for select using (true);
