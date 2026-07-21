@@ -6,6 +6,7 @@ from redis.asyncio import Redis
 
 from app.application.services.traffic_service import record_ping
 from app.core.cache import get_redis
+from app.core.client_ip import get_client_ip
 from app.core.config import get_settings
 from app.core.rate_limit import RateLimiter
 
@@ -31,8 +32,9 @@ async def ping(
 ) -> None:
     """Called by the frontend on page load. visitor_id is a stable anonymous id
     generated client-side (stored in localStorage). Falls back to IP."""
-    if visitor_id and _VISITOR_ID_RE.match(visitor_id):
-        vid = visitor_id
-    else:
-        vid = (request.client.host if request.client else None) or "unknown"
+    vid = (
+        visitor_id
+        if visitor_id and _VISITOR_ID_RE.match(visitor_id)
+        else get_client_ip(request)
+    )
     await record_ping(redis, vid)

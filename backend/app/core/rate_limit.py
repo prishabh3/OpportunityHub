@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.types import ASGIApp
 
 from app.core.cache import get_redis
+from app.core.client_ip import get_client_ip
 from app.core.config import Settings
 from app.core.exceptions import RateLimitedError, problem_response
 from app.core.logging import get_logger
@@ -17,6 +18,9 @@ from app.core.security import extract_bearer_token, get_jwt_verifier
 logger = get_logger(__name__)
 
 WINDOW_SECONDS = 60
+
+# Liveness probe — no dependencies touched, so it stays outside the budget.
+_LIVENESS_PATH = "/api/v1/health"
 
 
 def resolve_identity(request: Request) -> str:
@@ -31,8 +35,7 @@ def resolve_identity(request: Request) -> str:
             return f"user:{user.id}"
         except Exception:
             pass  # fall through to IP for invalid/expired tokens
-    client_ip = request.client.host if request.client else "unknown"
-    return f"ip:{client_ip}"
+    return f"ip:{get_client_ip(request)}"
 
 
 class RateLimiter:
@@ -115,7 +118,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._redis = redis
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        if request.url.path.startswith("/api/v1/health"):
+        # Exempt only the dependency-free liveness probe (Render calls it
+        # continuously). /health/ready is NOT exempt: it queries Postgres and
+        # pings Redis, so leaving it unmetered gives an unauthenticated caller a
+        # cheap way to amplify load onto both backing stores.
+        if request.url.path.rstrip("/") == _LIVENESS_PATH:
             return await call_next(request)
 
         identity, limit = await self._identify(request)
@@ -189,5 +196,4 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             except Exception:
                 pass  # fall through to IP-based limiting for invalid tokens
 
-        client_ip = request.client.host if request.client else "unknown"
-        return f"ip:{client_ip}", self._settings.rate_limit_anonymous_per_minute
+        return f"ip:{get_client_ip(request)}", self._settings.rate_limit_anonymous_per_minute

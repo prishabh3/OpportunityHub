@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { AuthForm } from "@/features/auth/components/auth-form";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 export const metadata: Metadata = {
   title: "Sign up — OpportunityHub",
@@ -14,7 +15,7 @@ export default async function SignUpPage({
   searchParams: Promise<{ redirect?: string }>;
 }) {
   const { redirect } = await searchParams;
-  const redirectTo = redirect && redirect.startsWith("/") ? redirect : "/";
+  const redirectTo = safeRedirectPath(redirect);
 
   return (
     <div className="flex flex-col gap-6">

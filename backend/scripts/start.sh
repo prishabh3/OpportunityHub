@@ -11,13 +11,14 @@ if [ "${SEED_ON_START}" = "true" ]; then
 fi
 
 echo "Starting API on port ${PORT:-8000}..."
-# --proxy-headers + --forwarded-allow-ips='*': we run behind Render's TLS-terminating
-# proxy, which forwards the real client over X-Forwarded-For/Proto. Without these,
-# request.client.host is the proxy's IP — which would bucket every anonymous user
-# into one rate-limit key and log the wrong address. '*' is safe here because Render
-# is the sole ingress and always sets these headers.
+# Client IP is resolved in the application (app/core/client_ip.py) from the
+# TRUSTED_PROXY_HOPS-th entry of X-Forwarded-For, counted from the right.
+#
+# We deliberately do NOT pass --forwarded-allow-ips='*'. That makes uvicorn trust
+# any sender of X-Forwarded-For and take its *leftmost* entry, which is fully
+# client-supplied: anyone could set request.client.host to an arbitrary value,
+# rotate it per request to bypass IP rate limiting entirely, and forge the
+# client_ip in the security logs.
 exec uvicorn app.main:app \
   --host 0.0.0.0 \
-  --port "${PORT:-8000}" \
-  --proxy-headers \
-  --forwarded-allow-ips='*'
+  --port "${PORT:-8000}"

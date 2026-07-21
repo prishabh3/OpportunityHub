@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 const schema = z.object({
   code: z.string().length(6, "Enter the 6-digit code from your authenticator app"),
@@ -60,7 +61,7 @@ export function MfaChallengeForm({ next = "/" }: { next?: string }) {
       toast.error("Invalid code — please try again.");
       return;
     }
-    router.push(next.startsWith("/") ? next : "/");
+    router.push(safeRedirectPath(next));
     router.refresh();
   }
 

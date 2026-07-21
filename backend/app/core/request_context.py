@@ -16,7 +16,13 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
 
+from app.core.client_ip import get_client_ip
+
 _REQUEST_ID_HEADER = "X-Request-ID"
+
+# An inbound request id is echoed into every log line for this request, so it
+# must not be able to carry newlines (forged log entries) or unbounded data.
+_MAX_REQUEST_ID_LENGTH = 64
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -27,15 +33,24 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Honor an inbound request id from the proxy/client if present (so a
-        # trace can span tiers), otherwise mint one.
-        request_id = request.headers.get(_REQUEST_ID_HEADER) or uuid4().hex
+        # trace can span tiers), otherwise mint one. The value is client-supplied,
+        # so accept only a bounded, alphanumeric id — otherwise it is a channel
+        # for injecting forged lines into the log stream.
+        inbound = request.headers.get(_REQUEST_ID_HEADER)
+        request_id = (
+            inbound
+            if inbound
+            and len(inbound) <= _MAX_REQUEST_ID_LENGTH
+            and inbound.replace("-", "").isalnum()
+            else uuid4().hex
+        )
 
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(
             request_id=request_id,
             method=request.method,
             path=request.url.path,
-            client_ip=request.client.host if request.client else "unknown",
+            client_ip=get_client_ip(request),
         )
         try:
             response = await call_next(request)

@@ -80,6 +80,13 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = Field(default="redis://localhost:6379/0")
 
+    # Number of reverse proxies that append to X-Forwarded-For in front of this
+    # app. Used to pick the one entry in that header an attacker cannot forge
+    # (see app/core/client_ip.py). 0 = reachable directly, ignore the header.
+    # Render's TLS terminator is a single hop, so production sets this to 1.
+    # Setting it too high reads an attacker-supplied entry — never guess upward.
+    trusted_proxy_hops: int = Field(default=0, ge=0, le=8)
+
     # Ingestion — shared secret for the /ingest/run endpoint (cron/manual trigger).
     ingest_token: str | None = Field(default=None)
 
@@ -111,6 +118,11 @@ class Settings(BaseSettings):
     @property
     def supabase_jwks_url(self) -> str:
         return f"{str(self.supabase_url).rstrip('/')}/auth/v1/.well-known/jwks.json"
+
+    @property
+    def supabase_jwt_issuer(self) -> str:
+        """Expected ``iss`` claim on Supabase-issued tokens."""
+        return f"{str(self.supabase_url).rstrip('/')}/auth/v1"
 
 
 @lru_cache

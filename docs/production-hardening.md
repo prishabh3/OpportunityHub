@@ -14,7 +14,14 @@ can be audited and re-applied.
 | Valid TLS certificates | Vercel + Render managed certs (auto-renew) | ✅ platform |
 | HSTS (API) | `SecurityHeadersMiddleware`, production only, `max-age=31536000; includeSubDomains; preload` | ✅ code |
 | HSTS (frontend) | `next.config.ts` headers, `max-age=63072000; includeSubDomains; preload` | ✅ code |
-| Real client IP behind proxy | `uvicorn --proxy-headers --forwarded-allow-ips='*'` in `scripts/start.sh` (so rate-limit/log keying uses X-Forwarded-For, not the Render proxy IP) | ✅ code |
+| Real client IP behind proxy | `app/core/client_ip.py` — reads the `TRUSTED_PROXY_HOPS`-th X-Forwarded-For entry **counted from the right**. Set `TRUSTED_PROXY_HOPS=1` on Render (one TLS proxy); 0 locally. | ✅ code |
+
+> **Do not reintroduce `--forwarded-allow-ips='*'`.** With that flag uvicorn trusts
+> X-Forwarded-For from any sender and reads its *leftmost* entry, which is entirely
+> client-supplied. A caller could then set their own `client_ip` — rotating it per
+> request to bypass IP rate limiting completely, and forging the address recorded
+> in every security log line below. `TRUSTED_PROXY_HOPS` must never exceed the real
+> number of proxies that append to the header.
 
 ## Security response headers (ASVS V14.4)
 
@@ -31,11 +38,13 @@ Set on **both** tiers — API via `app/core/security_headers.py`, frontend via `
 | Control | Status |
 |---|---|
 | Database not publicly accessible | ✅ Supabase Postgres reached only via the **Session Pooler** connection string (credentialed); no public 5432 exposure. |
+| Row-Level Security on every public table | ✅ migration `0004` enables RLS on the seven tables the initial schema missed (`skills`, `user_skills`, `sources`, `connector_runs`, `tags`, `opportunity_tags`, `deadline_reminders_sent`). Supabase exposes the `public` schema over PostgREST to anyone holding the (public) anon key, so a table without RLS is world-readable **and world-writable**. No policies are attached: the frontend uses Supabase for auth only, and the backend connects as the `postgres` role, which bypasses RLS. |
 | Redis protected | ✅ Upstash `rediss://` — TLS + token auth, not open to the internet. |
 | Secrets stored securely | ✅ `render.yaml` marks `DATABASE_URL`/`REDIS_URL`/`CORS_ORIGINS` as `sync: false` (dashboard-only). No secret is committed; `.env*` are gitignored. Rotation = update env var + redeploy. |
 | CORS restrictive | ✅ `allow_origins` = explicit list from `CORS_ORIGINS` (no `*`), methods/headers allowlisted, credentials enabled. **Verify `CORS_ORIGINS` on Render contains only the production Vercel domain.** |
 | Sensitive endpoints require auth | ✅ All user routes use `get_current_user`; admin routes `require_admin`; cron routes `verify_job_token` (timing-safe). See `docs` / access-control audit. |
 | Internal services protected | ✅ Ingestion/notification cron endpoints require the `X-Ingest-Token` shared secret. |
+| API schema not published | ✅ `/docs`, `/redoc`, `/openapi.json` are disabled when `ENVIRONMENT=production` (`app/main.py`) — they otherwise hand anonymous callers a full map of every admin and cron route. |
 
 ## Structured logging (ASVS V7.1, V7.2)
 

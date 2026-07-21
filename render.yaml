@@ -19,6 +19,11 @@ services:
         value: authenticated
       - key: SEED_ON_START
         value: "true"
+      # Render's TLS terminator is the single proxy that appends to
+      # X-Forwarded-For. Raise this only if another proxy (e.g. Cloudflare) is
+      # added in front — too high reads a client-forged entry as the client IP.
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
       - key: DATABASE_URL
         sync: false # Supabase Session Pooler URL (postgresql+asyncpg://...)
       - key: REDIS_URL

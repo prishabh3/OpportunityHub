@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import { MfaChallengeForm } from "@/features/auth/components/mfa-challenge-form";
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default async function MfaChallengePage({
 
   // Already at aal2 — nothing to verify.
   if (aal?.currentLevel === "aal2") {
-    redirect(next && next.startsWith("/") ? next : "/");
+    redirect(safeRedirectPath(next));
   }
 
   // Not authenticated at all — send to sign-in.
@@ -39,7 +40,7 @@ export default async function MfaChallengePage({
             Enter the 6-digit code from your authenticator app to continue.
           </p>
         </div>
-        <MfaChallengeForm next={next && next.startsWith("/") ? next : "/"} />
+        <MfaChallengeForm next={safeRedirectPath(next)} />
       </div>
     </div>
   );

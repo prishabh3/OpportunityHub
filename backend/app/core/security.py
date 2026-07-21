@@ -24,9 +24,10 @@ class AuthenticatedUser:
 class SupabaseJWTVerifier:
     """Verifies Supabase-issued JWTs against the project's JWKS endpoint."""
 
-    def __init__(self, jwks_url: str, audience: str) -> None:
+    def __init__(self, jwks_url: str, audience: str, issuer: str) -> None:
         self._jwks_client = PyJWKClient(jwks_url, cache_keys=True)
         self._audience = audience
+        self._issuer = issuer
 
     def verify(self, token: str) -> AuthenticatedUser:
         try:
@@ -39,6 +40,10 @@ class SupabaseJWTVerifier:
                 # here would open a key-confusion attack against the public key.
                 algorithms=["ES256", "RS256"],
                 audience=self._audience,
+                issuer=self._issuer,
+                # Reject tokens that omit the claims we authorize on, rather
+                # than treating an absent claim as "nothing to check".
+                options={"require": ["exp", "sub", "aud", "iss"]},
             )
         except jwt.ExpiredSignatureError as exc:
             logger.warning("jwt_expired")
@@ -61,6 +66,7 @@ def get_jwt_verifier() -> SupabaseJWTVerifier:
     return SupabaseJWTVerifier(
         jwks_url=settings.supabase_jwks_url,
         audience=settings.supabase_jwt_audience,
+        issuer=settings.supabase_jwt_issuer,
     )
 
 

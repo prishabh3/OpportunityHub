@@ -29,11 +29,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
 
+    # The interactive docs publish a complete map of the API — every admin and
+    # cron-triggered route, its parameters, and its auth header — to anonymous
+    # callers. That is free reconnaissance, so serve them outside production
+    # only. The frontend hand-writes its client and never fetches the schema.
+    is_production = settings.environment == "production"
+
     app = FastAPI(
         title="OpportunityHub API",
         version="0.1.0",
         lifespan=lifespan,
         debug=settings.debug,
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
+        openapi_url=None if is_production else "/openapi.json",
     )
 
     # CORS — restrict to explicit origin list, methods, and the three headers this

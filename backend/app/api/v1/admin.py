@@ -14,10 +14,17 @@ from app.application.dtos.admin import (
 from app.application.services.admin_service import AdminService
 from app.connectors.service import run_all
 from app.core.cache import get_redis
+from app.core.rate_limit import RateLimiter
 from app.core.security import AuthenticatedUser, require_admin
 from app.infrastructure.db.session import get_db_session
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+# Ingestion fans out to every external source and writes the whole catalogue.
+# The admin tier's global budget (1000/min) is no protection for an operation
+# this expensive, and concurrent runs duplicate all the outbound scraping — so
+# cap it hard. A compromised or careless admin session cannot spin it up.
+_ingest_limiter = RateLimiter(times=2, scope="admin-ingest", window_seconds=300)
 
 
 @router.get("/analytics", response_model=AdminAnalytics)
@@ -44,7 +51,7 @@ async def connector_runs(
     return await AdminService(session).recent_runs()
 
 
-@router.post("/ingest/run")
+@router.post("/ingest/run", dependencies=[Depends(_ingest_limiter)])
 async def trigger_ingest(
     _: Annotated[AuthenticatedUser, Depends(require_admin)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
