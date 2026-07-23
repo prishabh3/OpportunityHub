@@ -277,7 +277,7 @@ One PostgreSQL database (Supabase in production). Redis holds only ephemeral cou
 | `notification_preferences` | Per-user channel/event opt-ins (schema present; UI/delivery are later milestones). |
 | `resume_analyses`, `opportunity_matches`, `search_history`, `calendar_sync_tokens` | Schema reserved for later milestones (resume parsing, persisted match scores, search logging, ICS/Google Calendar). |
 
-**Row-Level Security** is enabled on every user-owned table. Opportunities are world-readable (`using (true)`); all personal tables use `auth.uid() = user_id` policies so a user can only touch their own rows. Two triggers maintain data automatically: `search_vector` is rebuilt from `title/organizer/description` on insert/update, and `updated_at` is bumped on update.
+**Row-Level Security** is enabled on every table in the `public` schema. Opportunities are world-readable (`using (true)`); personal tables use `auth.uid() = user_id` policies so a user can only touch their own rows; and reference/connector tables (`skills`, `sources`, `tags`, etc.) have RLS on with **no** policies, making them unreachable via the public anon key while the backend still reaches them as the `postgres` role. Two triggers maintain data automatically: `search_vector` is rebuilt from `title/organizer/description` on insert/update, and `updated_at` is bumped on update.
 
 **Redis keys:** `ratelimit:*` (global fixed-window buckets), `slidingrl:*` (per-route sliding-window logs), and `traffic:active` / `traffic:pageviews` / `traffic:visitors` (a sorted set, a counter, and a HyperLogLog).
 
